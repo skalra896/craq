@@ -29,22 +29,35 @@ class ListNode:
         self.tailnode = False
         self.commit_ids = []
         self.msg_id_dict = {}
+        self.ssh_obj = None
 
 class craq:
     def __init__(self, ips, users):
         self.ip_list = ips
         self.users_list = users
-        seld.usern = 'sk6691'
+        self.usern = 'sk6691'
         self.hostname = '.emulab.net'
         self.ssh_dict = {}
         self.ip_node_dict = {}
         self.user_node_dict = {}
         self.dll = DoubleLL()
+        self.nodes_list = []
         for ip in range(len(ip_list)):
             node = ListNode(self.ip_list[i], self.users_list[i])
             self.ip_node_dict[self.ip_list[i]] = node
             self.user_node_dict[self.users_list[i]] = node
             self.dll.add_node(node)
+            self.nodes_list.append(node)
+        self.setup_ssh_obj()
+    
+    def setup_ssh_obj(self):
+        for user, node in self.user_node_dict.items():
+            if not node.ssh_obj:
+                ssh_obj = paramiko.SSHClient()
+                ssh_obj.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                ssh_obj.connect(user+self.hostname, username=self.usern, key_filename='craq')
+                node.ssh_obj = ssh_obj
+                ssh_obj.close()
 
     def set_headnode(self):
         self.dll.head.next.headnode = True
@@ -54,8 +67,8 @@ class craq:
     
     def _server_run(self, user):
         client = self.ssh_dict[user]
-        client.connect(each_user+self.hostname, username=self.usern, key_filename='craq')
-        stdin, stdout, stderr = client.exec_command("sudo sed -i 's/host = .*/host = \"%s\"/' client/PythonClient.py"%(server_ip))
+        client.connect(user+self.hostname, username=self.usern, key_filename='craq')
+        stdin, stdout, stderr = client.exec_command("cd /tmp/work_dir/serverExample\n; python3 ServerPython.py")
         client.close()
 
     def run_servers(self):
@@ -64,9 +77,9 @@ class craq:
                 continue
             self._server_run(node.user)
 
-    def add_client_obj(self):
-        for i in range (len(self.users_list)):
-            each_user = self.users_list[i]
+    def add_setup_obj(self):
+        for node in self.nodes_list:
+            each_user = node.user
             client = paramiko.SSHClient()
             client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             client.connect(each_user+self.hostname, username=self.usern, key_filename='craq')
@@ -109,14 +122,24 @@ class craq:
         client.connect(each_user+self.hostname, username=self.usern, key_filename='craq')
         stdin, stdout, stderr = client.exec_command("sudo sed -i 's/host = .*/host = \"%s\"/' client/PythonClient.py"%(server_ip))
         client.close()
+    
+    def setup_nodes(self):
+        self.add_setup_obj()
+        self.set_headnode()
+        self.set_tailnode()
+        self.run_servers()
 
 def main():
     parser = argparse.ArgumentParser(
                     prog = 'CRAQ',
                     description = 'Parses args through cli')
     parser.add_argument('--users', nargs='+', help = 'nodes')
-    parset.add_argument('--ips', nargs='+', help = 'ips')
+    parser.add_argument('--ips', nargs='+', help = 'ips')
+    parser.add_argument("--setup", action='store_true', help="Sets up nodes")
     args = parser.parse_args()
-    craq_obj = craq(args.ips, args.users)
+    import pdb; pdb.set_trace()
+    if args.setup:
+        craq_obj = craq(args.ips, args.users)
+        craq_obj.setup_nodes()
 
 main()
