@@ -74,6 +74,20 @@ class craq:
         for node in self.nodes_list:
             self._server_run(node)
 
+    def _server_stop(self, node):
+        ssh_obj = node.ssh_obj
+        ssh_obj.connect(node.user+self.hostname, username=self.usern, key_filename='craq')
+        stdin, stdout, stderr = ssh_obj.exec_command("ps -ef | grep python3 | grep ServerPython.py")
+        response = stdout.readlines()
+        for each_res in response:
+            proc = each_res.strip().split()[1]
+            stdin, stdout, stderr = ssh_obj.exec_command("kill -9 %s"%(proc))
+        ssh_obj.close()
+
+    def stop_servers(self):
+        for node in self.nodes_list:
+            self._server_stop(node)
+
     def add_setup_obj(self):
         for node in self.nodes_list:
             each_user = node.user
