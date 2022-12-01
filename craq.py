@@ -37,12 +37,11 @@ class craq:
         self.users_list = users
         self.usern = 'sk6691'
         self.hostname = '.emulab.net'
-        self.ssh_dict = {}
         self.ip_node_dict = {}
         self.user_node_dict = {}
         self.dll = DoubleLL()
         self.nodes_list = []
-        for ip in range(len(ip_list)):
+        for i in range(len(self.ip_list)):
             node = ListNode(self.ip_list[i], self.users_list[i])
             self.ip_node_dict[self.ip_list[i]] = node
             self.user_node_dict[self.users_list[i]] = node
@@ -65,17 +64,15 @@ class craq:
     def set_tailnode(self):
         self.dll.tail.prev.tailnode = True
     
-    def _server_run(self, user):
-        client = self.ssh_dict[user]
-        client.connect(user+self.hostname, username=self.usern, key_filename='craq')
-        stdin, stdout, stderr = client.exec_command("cd /tmp/work_dir/serverExample\n; python3 ServerPython.py")
-        client.close()
+    def _server_run(self, node):
+        ssh_obj = node.ssh_obj
+        ssh_obj.connect(node.user+self.hostname, username=self.usern, key_filename='craq')
+        stdin, stdout, stderr = ssh_obj.exec_command("cd /tmp/work_dir/serverExample\n; python3 ServerPython.py")
+        ssh_obj.close()
 
     def run_servers(self):
-        for ip,node in self.ip_node_dict.items():
-            if node.headnode:
-                continue
-            self._server_run(node.user)
+        for node in self.nodes_list:
+            self._server_run(node)
 
     def add_setup_obj(self):
         for node in self.nodes_list:
