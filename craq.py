@@ -81,6 +81,7 @@ class craq:
         for node in self.nodes_list:
             each_user = node.user
             ssh_obj = node.ssh_obj
+            ssh_obj.connect(user+self.hostname, username=self.usern, key_filename='craq')
             stdin, stdout, stderr = ssh_obj.exec_command("sudo rm -r /tmp/work_dir")
             print(stdout.readlines())
             stdin, stdout, stderr = clssh_objient.exec_command("mkdir /tmp/work_dir")
