@@ -27,6 +27,8 @@ class ListNode:
         self.server = False
         self.headnode = False
         self.tailnode = False
+        self.commit_ids = []
+        self.msg_id_dict = {}
 
 class craq:
     def __init__(self, ips, users):
