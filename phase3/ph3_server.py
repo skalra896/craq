@@ -1,64 +1,83 @@
-class ServerHandler:
-    map = {}
-    nodesList = ["10.10.1.1", "10.10.1.2", "10.10.1.3"]
-    handy = ""
-    port = 9090
-    
-    def ServerHandler(self, index): 
-        self.index = index
-        self.len = len(nodesList)
+class CraqNode(): 
+    def __init__(self):
+        self.map = {} #data
+        self.next = None
+        self.prev = None
+        self.tail = None
         
-        if index != len - 1:
-            self.next = makeConnection(self, nodeList[index + 1], port) 
-        if index != 0: 
-            self.prev = makeConnection(self, nodeList[index - 1], port)
+class ServerHandler:
+    port = 9090
+    server_ips = ["10.10.1.1", "10.10.1.2", "10.10.1.3"]
+    index = 0
+    
+    def ServerHandler(self): 
+        self.len = len(server_ips)
+        self.node = new CraqNode();
+        
+        if index != len - 1: #not tail
+            self.node.next = makeConnection(self, server_ips[self.index + 1], port) 
+        if index != 0:       #not head
+            self.node.prev = makeConnection(self, server_ips[self.index - 1], port)
             
-        tail = makeConnection(self, nodeList[len - 1], port) 
+        self.node.tail = makeConnection(self, server_ips[self.len - 1], port) 
             
 
     def write(self, key, val):
+
         self.map[key] = {"msg" : val, "dirtybit" : 1} #data is dirty
         
-        if self.next != None: #if you have a next node. Tail has no next node
+        
+        if self.next != None:                             # have next node
             writeSuccessor(self, key, val)
-        if self.prev != None: # if you hava a prev node. Head has no prev node
-            self.prev.ack(self, key)  # TODO for write request client gets any output? as per paper there is no output
+        else                                              # tail node
+            ack(self, key);                               # commit + ack back
+            
+        if self.prev != None:                             # if you hava a prev node. Head has no prev node
+            self.prev.ack(self, key)         
             
         
     def read(self, key):
-        if(self.map[key]["dirtybit"] == 0): #data is commited at current node
+        if map.get(key) == None 
+            return None                       #key is not present
+    
+        if(self.map[key]["dirtybit"] == 0):   #data is commited at current node
             return self.map[key]["msg"]
         
-        bitAtTail = readTail(self, key)     #check tail dirty bit
+        bitAtTail = readTail(self, key)       #check dirty bita at tail
         
-        if(bitAtTail == 0):         # tail has commited
-            return self.map[key]["msg"] # return data
+        if bitAtTail == 0                      # data is commited at tail
+            return self.map[key]["msg"]        # return data
         
-        return None #data is not commited at tail
+        return None                           #tail does not have data
     
     def ack(self, key):
         self.map[key]["dirtybit"] = 0
-        
-        if(self.map[key]["dirtybit"] == 0):
-            return null
-        return list[0]
-    
-    
-    def readTail(self, key): 
-        bit = self.tail.read(key)
-        if bit is None: 
-            return 1 
-        return 0
-        
-        
-    def writeSuccessor(self, host, port):
         try:
-            # Run showCurrentTimestamp() method on server
-            currentTime = self.next.showCurrentTimestamp()
-            print(currentTime)
+            self.node.prev.ack(key)
+        except Thrift.TException as tx:
+            print('writeSuccessor couldnt pass message' : %s' % (tx.message))
+
+  
+    def readTail(self, key): 
+        bit = self.tail.checkDirtybit(key)
+                  s
+        if bit == 1: 
+            return 1  #uncommited data
+        return 0      #commited data
+      
+                      
+    def checkDirtybit():
+        if map.get(key) == None 
+            return 1                      #data is not present
+        return map[key]["dirtybit"]       
+      
+        
+    def writeSuccessor(self, key, value):
+        try:
+            currentTime = self.node.next.write(key, value)
 
         except Thrift.TException as tx:
-            print('Something went wrong : %s' % (tx.message))
+            print('writeSuccessor couldnt pass message' : %s' % (tx.message))
         
 
     
