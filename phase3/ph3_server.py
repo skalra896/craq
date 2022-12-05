@@ -12,7 +12,7 @@ class ServerHandler:
     
     def ServerHandler(self): 
         self.len = len(server_ips)
-        self.node = new CraqNode();
+        self.node = CraqNode()
         
         if index != len - 1: #not tail
             self.node.next = makeConnection(self, server_ips[self.index + 1], port) 
@@ -29,7 +29,7 @@ class ServerHandler:
         
         if self.next != None:                             # have next node
             writeSuccessor(self, key, val)
-        else                                              # tail node
+        else:                                              # tail node
             ack(self, key);                               # commit + ack back
             
         if self.prev != None:                             # if you hava a prev node. Head has no prev node
@@ -37,7 +37,7 @@ class ServerHandler:
             
         
     def read(self, key):
-        if map.get(key) == None 
+        if map.get(key) == None: 
             return None                       #key is not present
     
         if(self.map[key]["dirtybit"] == 0):   #data is commited at current node
@@ -45,7 +45,7 @@ class ServerHandler:
         
         bitAtTail = readTail(self, key)       #check dirty bita at tail
         
-        if bitAtTail == 0                      # data is commited at tail
+        if bitAtTail == 0:                      # data is commited at tail
             return self.map[key]["msg"]        # return data
         
         return None                           #tail does not have data
@@ -60,14 +60,13 @@ class ServerHandler:
   
     def readTail(self, key): 
         bit = self.tail.checkDirtybit(key)
-                  s
         if bit == 1: 
             return 1  #uncommited data
         return 0      #commited data
       
                       
     def checkDirtybit():
-        if map.get(key) == None 
+        if map.get(key) == None: 
             return 1                      #data is not present
         return map[key]["dirtybit"]       
       
