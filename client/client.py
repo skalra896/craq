@@ -51,7 +51,7 @@ def write(oprs):
     for i in range(oprs):
         # Run showCurrentTimestamp() method on server
         client = ip_dict.client
-        data = client.write(i, 0)
+        client.write(i, i)
         print(data)
         
 def read(oprs):
@@ -60,7 +60,7 @@ def read(oprs):
         ip_dict = ips_dict.get(server_ips[idx])
         if ip_dict == None: continue
         client = ip_dict.client
-        data = client.read(i, idx)
+        data = client.read(i)
         print(data)
     
 def skew_read(oprs):
@@ -69,7 +69,7 @@ def skew_read(oprs):
     if ip_dict == None: return
     client = ip_dict.client
     for i in range(oprs):
-        data = client.read(i, idx)
+        data = client.read(i)
         print(data)
 
 def main():
