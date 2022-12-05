@@ -55,7 +55,7 @@ class craq:
     def _ssh_obj_setup(self, node):
         ssh_obj = paramiko.SSHClient()
         ssh_obj.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh_obj.connect(user+self.hostname, username=self.usern, key_filename='craq')
+        ssh_obj.connect(node.user+self.hostname, username=self.usern, key_filename='craq')
         node.ssh_obj = ssh_obj
         ssh_obj.close()
 
