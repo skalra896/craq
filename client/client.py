@@ -62,7 +62,7 @@ def read(oprs):
         if ip_dict == None: continue
         ip_dict.transport.open()
         client = ip_dict.client
-        data = client.read(i)
+        data = client.read(i, idx)
         print(data)
         ip_dict.tranport.close()
     
@@ -73,7 +73,7 @@ def skew_read(oprs):
     ip_dict.transport.open()
     client = ip_dict.client
     for i in range(oprs):
-        data = client.read(i)
+        data = client.read(i, idx)
         print(data)
     ip_dict.tranport.close()
 
@@ -88,35 +88,13 @@ def main():
     write_ops = args.write
     read_ops = args.read
     skew_read_ops = args.skew_read_ops
-    try:
-        host = random.random(host_list)
-        # Init thrift connection and protocol handlers
-        transport = TSocket.TSocket( host , port)
-        transport = TTransport.TBufferedTransport(transport)
-        protocol = TBinaryProtocol.TBinaryProtocol(transport)
+    if write_ops:
+        write(client, write_ops)
 
-        # Set client to our Example
-        client = Example.Client(protocol)
+    if read_ops:
+        read(client, read_ops)
 
-        if write_ops:
-            write(client, write_ops)
-
-        if read_ops:
-            read(client, read_ops)
-
-        if skew_read_ops:
-            skew_read(client, skew_read_ops)
-        # Connect to server
-        transport.open()
-
-        # Assume that you have a job which takes some time
-        # but client sholdn't have to wait for job to finish
-        # ie. Creating 10 thumbnails and putting these files to sepeate folders
-        #client.asynchronousJob()
-
-        # Close connection
-        transport.close()
-
-    except Thrift.TException as tx:
-        print('Something went wrong : %s' % (tx.message))
+    if skew_read_ops:
+        skew_read(client, skew_read_ops)
+        
 main()
