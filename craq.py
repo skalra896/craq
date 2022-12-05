@@ -33,14 +33,17 @@ class ListNode:
 
 class craq:
     def __init__(self, ips, users):
-        self.ip_list = ips
-        self.users_list = users
+        self.ip_list = ips[2:]
+        self.users_list = users[2:]
         self.usern = 'sk6691'
         self.hostname = '.emulab.net'
         self.ip_node_dict = {}
         self.user_node_dict = {}
         self.dll = DoubleLL()
         self.nodes_list = []
+        self.client_node = ListNode(ips[0], users[0])
+        self.handy_node = ListNode(ips[1], users[1])
+        self._ssh_obj_setup(self.client_node)
         for i in range(len(self.ip_list)):
             node = ListNode(self.ip_list[i], self.users_list[i])
             self.ip_node_dict[self.ip_list[i]] = node
@@ -49,14 +52,17 @@ class craq:
             self.nodes_list.append(node)
         self.setup_ssh_obj()
     
+    def _ssh_obj_setup(self, node):
+        ssh_obj = paramiko.SSHClient()
+        ssh_obj.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh_obj.connect(user+self.hostname, username=self.usern, key_filename='craq')
+        node.ssh_obj = ssh_obj
+        ssh_obj.close()
+
     def setup_ssh_obj(self):
         for user, node in self.user_node_dict.items():
             if not node.ssh_obj:
-                ssh_obj = paramiko.SSHClient()
-                ssh_obj.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-                ssh_obj.connect(user+self.hostname, username=self.usern, key_filename='craq')
-                node.ssh_obj = ssh_obj
-                ssh_obj.close()
+                self._ssh_obj_setup(node)
 
     def set_headnode(self):
         self.dll.head.next.headnode = True
@@ -126,11 +132,20 @@ class craq:
             #import pdb; pdb.set_trace()
             ssh_obj.close()
 
-    def update_ip(self, host_node, server_ip):
+    def _update_ips(self, host_node, handy_node = None):
         ssh_obj = host_node.ssh_obj
         ssh_obj.connect(each_user+self.hostname, username=self.usern, key_filename='craq')
-        stdin, stdout, stderr = ssh_obj.exec_command("sudo sed -i 's/host = .*/host = \"%s\"/' client/PythonClient.py"%(server_ip))
+        stdin, stdout, stderr = ssh_obj.exec_command("sudo sed -i 's/host = .*/host = %s/' client/PythonClient.py"%(self.ip_list))
+        if handy_node:
+            pass #add logic to have handy node details in cases of node failure
         ssh_obj.close()
+
+    def update_ips_server(self):
+        for node in self.nodes_list:
+            self._update_ips(node)
+
+    def update_ips_client(self):
+        self._update_ips(self.client_node)
     
     def setup_nodes(self):
         self.add_setup_obj()
