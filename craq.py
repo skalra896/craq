@@ -176,6 +176,8 @@ def main():
     if args.setup:
         craq_obj.setup_nodes()
         return
+    craq_obj.update_ips_client()
+    craq_obj.update_ips_server()
     craq_obj.run_client(args.write_ops, args.read_ops, args.skew_read_ops)
 
 main()
