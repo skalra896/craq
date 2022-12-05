@@ -1,19 +1,21 @@
 class ServerHandler:
     map = {}
-    nodesList = ["10.10.1.1", "10.10.1.2", "10.10.1.3"]
+    server_ips = ["10.10.1.1", "10.10.1.2", "10.10.1.3"]
     handy = ""
+    head = ""
+    tail = ""
     port = 9090
     
     def ServerHandler(self, index): 
         self.index = index
-        self.len = len(nodesList)
+        self.len = len(server_ips)
         
         if index != len - 1:
-            self.next = makeConnection(self, nodeList[index + 1], port) 
+            self.next = makeConnection(self, server_ips[index + 1], port) 
         if index != 0: 
-            self.prev = makeConnection(self, nodeList[index - 1], port)
+            self.prev = makeConnection(self, server_ips[index - 1], port)
             
-        tail = makeConnection(self, nodeList[len - 1], port) 
+        tail = makeConnection(self, server_ips[len - 1], port) 
             
 
     def write(self, key, val):
