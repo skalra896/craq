@@ -5,7 +5,9 @@
 # showCurrentTimestamp : which returns current time stamp from server
 # asynchronousJob() : which calls a "oneway" method
 #
+import argparse
 host_list = ["10.10.1.1"]
+handy = ""
 port = 9090
 
 import sys
@@ -52,3 +54,12 @@ for i in range(iterations):
 
     except Thrift.TException as tx:
         print('Something went wrong : %s' % (tx.message))
+
+def main():
+    parser = argparse.ArgumentParser(
+                    prog = 'CRAQ Client',
+                    description = 'Parses args through cli')
+    parser.add_argument('--write', type=int)
+    parser.add_argument('--read', type=int)
+    parser.add_argument('--skew_read', type=int)
+main()
