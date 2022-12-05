@@ -152,6 +152,13 @@ class craq:
         self.set_headnode()
         self.set_tailnode()
         self.run_servers()
+        
+    def run_client(write_ops, read_ops, skew_read_ops):
+        self.client_node.ssh_obj.connect(node.user+self.hostname, username=self.usern, key_filename='craq')
+        stdin, stdout, stderr = ssh_obj.exec_command("python3 PythonClient.py --write %s --read %s --skew_read %s"
+                                %(write_ops, read_ops, skew_read_ops))
+        self.client_node.ssh_obj.close()
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -160,10 +167,15 @@ def main():
     parser.add_argument('--users', nargs='+', help = 'nodes')
     parser.add_argument('--ips', nargs='+', help = 'ips')
     parser.add_argument("--setup", action='store_true', help="Sets up nodes")
+    parser.add_argument('--write_ops', type=int, default=200)
+    parser.add_argument('--read_ops', type=int, default=200)
+    parser.add_argument('--skew_read_ops', type=int, default=200)
     args = parser.parse_args()
     craq_obj = craq(args.ips, args.users)
     import pdb; pdb.set_trace()
     if args.setup:
         craq_obj.setup_nodes()
+        return
+    craq_obj.run_client(args.write_ops, args.read_ops, args.skew_read_ops)
 
 main()
