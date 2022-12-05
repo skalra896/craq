@@ -155,7 +155,7 @@ class craq:
         
     def run_client(write_ops, read_ops, skew_read_ops):
         self.client_node.ssh_obj.connect(node.user+self.hostname, username=self.usern, key_filename='craq')
-        stdin, stdout, stderr = ssh_obj.exec_command("python3 PythonClient.py --write %s --read %s --skew_read %s"
+        stdin, stdout, stderr = ssh_obj.exec_command("python3 client.py --write %s --read %s --skew_read %s"
                                 %(write_ops, read_ops, skew_read_ops))
         self.client_node.ssh_obj.close()
 

@@ -7,7 +7,6 @@
 #
 import argparse
 host_list = ["10.10.1.1"]
-handy = ""
 port = 9090
 
 import sys

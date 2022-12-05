@@ -1,6 +1,7 @@
 class ServerHandler:
     map = {}
     nodesList = ["10.10.1.1", "10.10.1.2", "10.10.1.3"]
+    handy = ""
     port = 9090
     
     def ServerHandler(self, index): 
