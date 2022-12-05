@@ -5,8 +5,7 @@
 # showCurrentTimestamp : which returns current time stamp from server
 # asynchronousJob() : which calls a "oneway" method
 #
-
-host = "10.10.1.1"
+host_list = ["10.10.1.1"]
 port = 9090
 
 import sys
@@ -23,32 +22,33 @@ from thrift import Thrift
 from thrift.transport import TSocket
 from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
+iterations = 1
+for i in range(iterations):
+    try:
+        host = random.random(host_list)
+        # Init thrift connection and protocol handlers
+        transport = TSocket.TSocket( host , port)
+        transport = TTransport.TBufferedTransport(transport)
+        protocol = TBinaryProtocol.TBinaryProtocol(transport)
 
-try:
+        # Set client to our Example
+        client = Example.Client(protocol)
 
-    # Init thrift connection and protocol handlers
-    transport = TSocket.TSocket( host , port)
-    transport = TTransport.TBufferedTransport(transport)
-    protocol = TBinaryProtocol.TBinaryProtocol(transport)
+        # Connect to server
+        transport.open()
 
-    # Set client to our Example
-    client = Example.Client(protocol)
+        # Run showCurrentTimestamp() method on server
+        currentTime = client.showCurrentTimestamp()
+        print(currentTime)
 
-    # Connect to server
-    transport.open()
-
-    # Run showCurrentTimestamp() method on server
-    currentTime = client.showCurrentTimestamp()
-    print(currentTime)
-
-    # Assume that you have a job which takes some time
-    # but client sholdn't have to wait for job to finish
-    # ie. Creating 10 thumbnails and putting these files to sepeate folders
-    client.asynchronousJob()
+        # Assume that you have a job which takes some time
+        # but client sholdn't have to wait for job to finish
+        # ie. Creating 10 thumbnails and putting these files to sepeate folders
+        client.asynchronousJob()
 
 
-    # Close connection
-    transport.close()
+        # Close connection
+        transport.close()
 
-except Thrift.TException as tx:
-    print('Something went wrong : %s' % (tx.message))
+    except Thrift.TException as tx:
+        print('Something went wrong : %s' % (tx.message))
