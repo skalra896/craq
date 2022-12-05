@@ -41,41 +41,36 @@ for ip in server_ips:
         ips_dict[ip]['transport'] = transport
         ips_dict[ip]['protocol'] = protocol
         ips_dict[ip]['client'] = client
+        ips_dict[ip]['transport'].open()
     except Thrift.TException as tx:
         print('Something went wrong : %s' % (tx.message))
 
 def write(oprs):
     ip_dict = ips_dict.get(server_ips[0])
     if ip_dict == None: return
-    ip_dict.transport.open()
     for i in range(oprs):
         # Run showCurrentTimestamp() method on server
         client = ip_dict.client
         data = client.write(i, 0)
         print(data)
-    ip_dict.tranport.close()
         
 def read(oprs):
     for i in range(oprs):
         idx = random.randint(0, 2)
         ip_dict = ips_dict.get(server_ips[idx])
         if ip_dict == None: continue
-        ip_dict.transport.open()
         client = ip_dict.client
         data = client.read(i, idx)
         print(data)
-        ip_dict.tranport.close()
     
 def skew_read(oprs):
     idx = random.randint(0, 2)
     ip_dict = ips_dict.get(server_ips[idx])
     if ip_dict == None: return
-    ip_dict.transport.open()
     client = ip_dict.client
     for i in range(oprs):
         data = client.read(i, idx)
         print(data)
-    ip_dict.tranport.close()
 
 def main():
     parser = argparse.ArgumentParser(
@@ -97,4 +92,6 @@ def main():
     if skew_read_ops:
         skew_read(client, skew_read_ops)
         
+    for ip in server_ips:
+        ips_dict[ip]['transport'].close()
 main()
