@@ -4,7 +4,7 @@ class ServerHandler:
     index = 0
     
     def __init__(self): 
-        self.length = len(server_ips)
+        self.length = len(self.server_ips)
         self.map = {} 
         self.next = None
         self.prev = None
