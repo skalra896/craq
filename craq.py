@@ -135,7 +135,7 @@ class craq:
     def _update_ips(self, host_node, handy_node = None):
         ssh_obj = host_node.ssh_obj
         ssh_obj.connect(each_user+self.hostname, username=self.usern, key_filename='craq')
-        stdin, stdout, stderr = ssh_obj.exec_command("sudo sed -i 's/host = .*/host = %s/' client/PythonClient.py"%(self.ip_list))
+        stdin, stdout, stderr = ssh_obj.exec_command("sudo sed -i 's/host = .*/host = %s/'"%(self.ip_list))
         if handy_node:
             pass #add logic to have handy node details in cases of node failure
         ssh_obj.close()
