@@ -44,6 +44,7 @@ class craq:
         self.client_node = ListNode(ips[0], users[0])
         self.handy_node = ListNode(ips[1], users[1])
         self._ssh_obj_setup(self.client_node)
+        self._ssh_obj_setup(self.handy_node)
         for i in range(len(self.ip_list)):
             node = ListNode(self.ip_list[i], self.users_list[i])
             self.ip_node_dict[self.ip_list[i]] = node
@@ -95,13 +96,17 @@ class craq:
             self._server_stop(node)
 
     def add_setup_obj(self):
-        for node in self.nodes_list:
+        for node in ([self.client_node, self.handy_node] + self.nodes_list):
             each_user = node.user
             ssh_obj = node.ssh_obj
-            ssh_obj.connect(user+self.hostname, username=self.usern, key_filename='craq')
+            ssh_obj.connect(each_user+self.hostname, username=self.usern, key_filename='craq')
+            #import pdb; pdb.set_trace()
+            stdin, stdout, stderr = ssh_obj.exec_command("thrift --version")
+            res = stdout.read()
+            if "Thrift version" in str(res): continue
             stdin, stdout, stderr = ssh_obj.exec_command("sudo rm -r /tmp/work_dir")
             print(stdout.readlines())
-            stdin, stdout, stderr = clssh_objient.exec_command("mkdir /tmp/work_dir")
+            stdin, stdout, stderr = ssh_obj.exec_command("mkdir /tmp/work_dir")
             print(stdout.readlines())
             stdin, stdout, stderr = ssh_obj.exec_command("sudo apt-get -y install libboost-dev libboost-test-dev libboost-program-options-dev \
             libboost-filesystem-dev libboost-thread-dev libevent-dev automake libtool flex bison pkg-config g++ libssl-dev")
