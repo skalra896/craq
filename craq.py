@@ -100,7 +100,6 @@ class craq:
             each_user = node.user
             ssh_obj = node.ssh_obj
             ssh_obj.connect(each_user+self.hostname, username=self.usern, key_filename='craq')
-            #import pdb; pdb.set_trace()
             stdin, stdout, stderr = ssh_obj.exec_command("thrift --version")
             res = stdout.read()
             if "Thrift version" in str(res): continue
@@ -134,7 +133,6 @@ class craq:
             stdin, stdout, stderr = ssh_obj.exec_command("cd /tmp/work_dir/thrift-0.17.0/lib/py\n; sudo python3 setup.py install")
             os.popen("echo 2225 | sudo -S scp -i craq -o StrictHostKeyChecking=no -r client %s@%s%s:/tmp/work_dir/"%(usern,each_user,hostname)).read()
             os.popen("echo 2225 | sudo -S scp -i craq -o StrictHostKeyChecking=no -r serverExample %s@%s%s:/tmp/work_dir/"%(usern,each_user,hostname)).read()
-            #import pdb; pdb.set_trace()
             ssh_obj.close()
 
     def _update_ips(self, host_node, handy_node = None):
