@@ -184,8 +184,17 @@ def main():
     if args.setup:
         craq_obj.setup_nodes()
         return
+    craq_obj.add_client_server_files()
     craq_obj.update_ips_client()
     craq_obj.update_ips_server()
     craq_obj.run_client(args.write_ops, args.read_ops, args.skew_read_ops)
 
 main()
+
+'''
+how to:
+1. To setup thrift:
+    python3 craq.py --users all users --ips all ips --setup
+2. To run client
+    python3 craq.py This also copies client server and handler directories to each node
+'''
