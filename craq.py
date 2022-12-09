@@ -131,7 +131,7 @@ class craq:
             print(stdout.readlines())
             if stderr.readlines():
                 ssh_obj.connect(each_user+self.hostname, username=self.usern, key_filename='craq')
-            stdin, stdout, stderr = ssh_obj.exec_command("cd /tmp/work_dir/thrift-0.17.0\n; \")
+            stdin, stdout, stderr = ssh_obj.exec_command("cd /tmp/work_dir/thrift-0.17.0\n; sudo make install")
             print(stdout.readlines())
             if stderr.readlines():
                 ssh_obj.connect(each_user+self.hostname, username=self.usern, key_filename='craq')
