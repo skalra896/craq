@@ -1,5 +1,6 @@
 
-host_list = ["10.10.1.2"]
+host_list = ["10.10.1.1","10.10.1.2"]
+write_node = "10.10.1.1"
 port = 9090
 
 import sys
@@ -18,23 +19,20 @@ from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
 
 try:
-        
-        # Init thrift connection and protocol handlers
-        transport = TSocket.TSocket( host_list[0] , port)
-        transport = TTransport.TBufferedTransport(transport)
-        protocol = TBinaryProtocol.TBinaryProtocol(transport)
 
-        # Set client to our Example
-        client = Handler.Client(protocol)
+        for i in range(0, len(host_list)):
+                print('connecting host')
+                transport = TSocket.TSocket( host_list[i] , port)
+                transport = TTransport.TBufferedTransport(transport)
+                protocol = TBinaryProtocol.TBinaryProtocol(transport)
+                client = Handler.Client(protocol)
+                transport.open()
+                print('index : %s calling set node connection' %i)
+                client.set_node_connections()
+                print('done connection')
+      
+      
 
-        # Connect to server
-        transport.open()
-
-        val = client.write(1,1)
-        print(val)
-
-        # Close connection
-        transport.close()
 
 except Thrift.TException as tx:
         print('Something went wrong : %s' % (tx.message))

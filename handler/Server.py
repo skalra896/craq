@@ -1,6 +1,7 @@
 
 port = 9090
 
+from operator import index
 import sys
 # your gen-py dir
 sys.path.append('gen-py')
@@ -30,41 +31,24 @@ class ServiceHandler:
 
     
     def set_node_connections(self):
-        print('set node connections')
-        if self.index != self.length - 1 and self.next is None: #not tail
+        print('inside set node connections method ')
+
+        if self.index != self.length - 1 : #not tail
+            print('making next connection set node connections, index: %s '% (self.index))
             self.next = self.makeConnection(self.server_ips[self.index + 1]) 
-        if self.index != 0 and self.prev is None:       #not head
-            self.prev = self.makeConnection(self.server_ips[self.index - 1])
-
-        if self.index != self.length - 1 and self.tail is None: 
-            self.tail = self.makeConnection(self.server_ips[self.length - 1]) 
-
-    def write(self, key, val):
+            print('connected %s to %s as next node' %(self.server_ips[self.index], self.server_ips[self.index+1]))
     
-        self.map[key] = {"msg" : val, "dirtybit" : 1} #data is dirty
+        
+        if self.index != 0 :       #not head
+            print('making prev connection set node connections, index: %s '% (self.index))
+            self.prev = self.makeConnection(self.server_ips[self.index - 1])
+            print('connected %s to %s as prev node' %(self.server_ips[self.index], self.server_ips[self.index-1]))
 
-        if self.next != None:                             # have next node
-            self.writeSuccessor(key, val)
+        if self.index != self.length - 1: 
+            print('making tail connection set node connections, index: %s '% (self.index))
+            self.tail = self.makeConnection(self.server_ips[self.length - 1]) 
+            print('connected %s to %s as tail node' %(self.server_ips[self.index], self.server_ips[self.length-1]))
 
-        else:                                              # tail node
-            self.ack(key)                             # commit + ack back                            
-     
-    def ack(self, key):
-        self.set_node_connections()
-        self.map[key]["dirtybit"] = 0
-        try:
-            self.prev.ack(key)
-        except Thrift.TException as tx:
-            print('writeSuccessor couldnt pass message: %s' % (tx.message))
-
-    def writeSuccessor(self, key, value):
-        self.set_node_connections()
-        try:
-            val = self.next.write(key, value)
-            return val
-
-        except Thrift.TException as tx:
-            print('writeSuccessor couldnt pass message: %s' % (tx.message))
 
     def makeConnection(self, host): 
         try: 
