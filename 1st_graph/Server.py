@@ -85,7 +85,7 @@ class ServiceHandler:
     def ack(self, key):
         self.map[key]["dirtybit"] = 0
         print('inside ack method sending from %s' % (self.server_ips[self.index]))
-        if self.prev is not None: 
+        if self.prev != None: 
             try:
                 self.prev.ack(key)
                 print('sent ack from %s to %s ' % (self.server_ips[self.index], self.server_ips[self.index - 1]))
@@ -102,7 +102,7 @@ class ServiceHandler:
         if(self.map[key]["dirtybit"] == 0):   #data is commited at current node
             return self.map[key]["msg"]
         
-        if self.tail is not None: 
+        if self.tail != None: 
             bitAtTail = self.readTail(key)       #check dirty bit at tail
             
             if bitAtTail == 0:                      # data is commited at tail
