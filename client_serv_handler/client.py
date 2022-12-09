@@ -41,7 +41,7 @@ class Client:
         self.skew_read_time = 0
 
     def connect_servers(self):
-        for ip in server_ips:
+        for ip in self.server_ips:
             try:
                 print('connecting host')
                 transport = TSocket.TSocket(ip , self.port)
@@ -73,7 +73,7 @@ class Client:
         self.skew_read_time = time.time() - start_time
 
     def write(self):
-        ip_dict = self.ips_dict.get(server_ips[0])
+        ip_dict = self.ips_dict.get(self.server_ips[0])
         if ip_dict == None: return
         for i in range(self.write_ops):
             client = ip_dict.client
@@ -83,7 +83,7 @@ class Client:
     def read(self):
         for i in range(self.read_ops):
             idx = random.randint(0, 2)
-            ip_dict = self.ips_dict.get(server_ips[idx])
+            ip_dict = self.ips_dict.get(self.server_ips[idx])
             if ip_dict == None: continue
             client = ip_dict.client
             data = client.read(i)
@@ -91,7 +91,7 @@ class Client:
         
     def skew_read(self):
         idx = random.randint(0, 2)
-        ip_dict = self.ips_dict.get(server_ips[idx])
+        ip_dict = self.ips_dict.get(self.server_ips[idx])
         if ip_dict == None: return
         client = ip_dict.client
         for i in range(self.skew_read_ops):
@@ -111,8 +111,9 @@ def main():
     skew_read_ops = args.skew_read_ops
 
     client_obj = Client(write_ops, read_ops, skew_read_ops)
-    client_obj.run_ops()
-    for ip in server_ips:
+    client_obj.connect_servers()
+    #client_obj.run_ops()
+    for ip in client_obj.server_ips:
         client_obj.ips_dict[ip]['transport'].close()
     
 main()
