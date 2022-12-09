@@ -1,0 +1,10 @@
+client ssh -p 22 sk6691@pc304.emulab.net   155.98.39.104
+
+handy: pc300 155.98.39.100
+
+
+#servers
+python3 craq.py --users pc304 pc300 pc202 pc203 pc204 --ips 155.98.39.104 155.98.39.100 155.98.39.2 155.98.39.3 155.98.39.4 --setup
+
+
+python3 craq.py --users pc304 pc300 --ips 155.98.39.104 155.98.39.100
