@@ -95,6 +95,13 @@ class craq:
         for node in self.nodes_list:
             self._server_stop(node)
 
+    def add_client_server_files(self):
+        for node in ([self.client_node, self.handy_node] + self.nodes_list):
+            each_user = node.user
+            os.popen("echo 2225 | sudo -S scp -i craq -o StrictHostKeyChecking=no -r handler %s@%s%s:/tmp/work_dir/"%(self.usern,each_user,self.hostname)).read()
+            os.popen("echo 2225 | sudo -S scp -i craq -o StrictHostKeyChecking=no -r client %s@%s%s:/tmp/work_dir/"%(self.usern,each_user,self.hostname)).read()
+            os.popen("echo 2225 | sudo -S scp -i craq -o StrictHostKeyChecking=no -r serverExample %s@%s%s:/tmp/work_dir/"%(self.usern,each_user,self.hostname)).read()
+
     def add_setup_obj(self):
         for node in ([self.client_node, self.handy_node] + self.nodes_list):
             each_user = node.user
@@ -107,7 +114,7 @@ class craq:
             print(stdout.readlines())
             stdin, stdout, stderr = ssh_obj.exec_command("mkdir /tmp/work_dir")
             print(stdout.readlines())
-            stdin, stdout, stderr = ssh_obj.exec_command("sudo apt-get -y install libboost-dev libboost-test-dev libboost-program-options-dev \
+            stdin, stdout, stderr = ssh_obj.exec_command("sudo apt-get -y update; sudo apt-get -y install libboost-dev libboost-test-dev libboost-program-options-dev \
             libboost-filesystem-dev libboost-thread-dev libevent-dev automake libtool flex bison pkg-config g++ libssl-dev")
             stdout.readlines()
             if stderr.readlines():
@@ -124,15 +131,13 @@ class craq:
             print(stdout.readlines())
             if stderr.readlines():
                 ssh_obj.connect(each_user+self.hostname, username=self.usern, key_filename='craq')
-            stdin, stdout, stderr = ssh_obj.exec_command("cd /tmp/work_dir/thrift-0.17.0\n; sudo make install")
+            stdin, stdout, stderr = ssh_obj.exec_command("cd /tmp/work_dir/thrift-0.17.0\n; \")
             print(stdout.readlines())
             if stderr.readlines():
                 ssh_obj.connect(each_user+self.hostname, username=self.usern, key_filename='craq')
             stdin, stdout, stderr = ssh_obj.exec_command("thrift -version")
             print(stdout.readlines())
             stdin, stdout, stderr = ssh_obj.exec_command("cd /tmp/work_dir/thrift-0.17.0/lib/py\n; sudo python3 setup.py install")
-            os.popen("echo 2225 | sudo -S scp -i craq -o StrictHostKeyChecking=no -r client %s@%s%s:/tmp/work_dir/"%(usern,each_user,hostname)).read()
-            os.popen("echo 2225 | sudo -S scp -i craq -o StrictHostKeyChecking=no -r serverExample %s@%s%s:/tmp/work_dir/"%(usern,each_user,hostname)).read()
             ssh_obj.close()
 
     def _update_ips(self, host_node, handy_node = None):
