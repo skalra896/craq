@@ -19,7 +19,7 @@ from thrift.server import TServer
 
 class ServiceHandler:
     
-    server_ips = ["10.10.1.1", "10.10.1.2"]
+    server_ips = ["155.98.39.2", "155.98.39.3", "155.98.39.4"]# node 0,1,2
 
     def __init__(self): 
         self.length = len(self.server_ips)
