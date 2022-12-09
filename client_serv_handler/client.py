@@ -40,7 +40,8 @@ class Client:
         self.skew_read_time = 0
 
     def connect_servers(self):
-        for ip in self.server_ips:
+        for i in range(len(self.server_ips)):
+            ip = self.server_ips[i]
             try:
                 print('connecting host')
                 transport = TSocket.TSocket(ip , self.port)
@@ -55,7 +56,7 @@ class Client:
                 self.ips_dict[ip]['client'] = client
                 self.ips_dict[ip]['transport'].open()
                 print('index : %s calling set node connection' %i)
-                client.set_node_connections()
+                client.set_node_connections(i)
                 print('done connection')
             except Thrift.TException as tx:
                 print('Something went wrong : %s' % (tx.message))
