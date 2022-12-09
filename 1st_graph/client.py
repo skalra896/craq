@@ -87,7 +87,8 @@ class Client:
             if ip_dict == None: continue
             client = ip_dict['client']
             data = client.read(i)
-            if data: self.read_count += 1
+            if data != -1 : self.read_count += 1
+            return data
         
     def skew_read(self):
         idx = random.randint(0, 2)
@@ -96,15 +97,15 @@ class Client:
         client = ip_dict['client']
         for i in range(self.skew_read_ops):
             data = client.read(i)
-            if data: self.skew_read_count += 1
+            if data != -1: self.skew_read_count += 1
 
 def main():
     parser = argparse.ArgumentParser(
                     prog = 'CRAQ Client',
                     description = 'Parses args through cli')
     parser.add_argument('--write', type=int, default=10)
-    parser.add_argument('--read', type=int, default=0)
-    parser.add_argument('--skew_read', type=int, default=0)
+    parser.add_argument('--read', type=int, default=10)
+    parser.add_argument('--skew_read', type=int, default=10)
     args = parser.parse_args()
     write_ops = args.write
     read_ops = args.read

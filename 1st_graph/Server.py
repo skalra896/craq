@@ -83,22 +83,52 @@ class ServiceHandler:
             self.ack(key)                             # commit + ack back                            
      
     def ack(self, key):
+        self.map[key]["dirtybit"] = 0
+        print('inside ack method sending from %s to %s ' % (self.server_ips[self.index], self.server_ips[self.index - 1]))
         if self.index != 0:
-            print('inside ack method sending from %s to %s ' % (self.server_ips[self.index], self.server_ips[self.index - 1]))
-            self.map[key]["dirtybit"] = 0
-            try:
-                self.prev.ack(key)
-                print('sent ack from %s to %s ' % (self.server_ips[self.index], self.server_ips[self.index - 1]))
-            except Thrift.TException as tx:
-                print('writeSuccessor couldnt pass message: %s' % (tx.message))
+            if self.index != self.length - 1:
+                try:
+                    self.prev.ack(key)
+                    print('sent ack from %s to %s ' % (self.server_ips[self.index], self.server_ips[self.index - 1]))
+                except Thrift.TException as tx:
+                    print('Ack couldnt pass message: %s' % (tx.message))
 
+    def read(self, key):
+        print('making read at index: %s '% (self.index))
+        if self.map.get(key) == None: 
+            return -1                     #key is not present
+        
+        print('Dirty bit val: %s'%(self.map[key]["dirtybit"]))
+
+        if(self.map[key]["dirtybit"] == 0):   #data is commited at current node
+            return self.map[key]["msg"]
+        
+        bitAtTail = self.readTail(key)       #check dirty bit at tail
+        
+        if bitAtTail == 0:                      # data is commited at tail
+            return self.map[key]["msg"]        # return data
+        
+        return -1    
+
+    def readTail(self, key):
+        print('Checking tail for read') 
+        bit = self.tail.checkDirtybit(key)
+        if bit == 0: 
+            return 0  #commited data
+        return 1      #uncommited data
+                      
+    def checkDirtybit(self, key):
+        print('Checking dirtybit for read')
+        if self.map.get(key) == None: 
+            return 1                      #data is not present
+        return self.map[key]["dirtybit"]   
 
     def writeSuccessor(self, key, value):
         try:
             val = self.next.write(key, value)
 
         except Thrift.TException as tx:
-            print('writeSuccessor couldnt pass message: %s' % (tx.message))
+            print('writeSuccessor could not pass message: %s' % (tx.message))
     
         
 # set handler to our implementation
