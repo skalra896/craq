@@ -139,7 +139,9 @@ class craq:
             print(stdout.readlines())
             stdin, stdout, stderr = ssh_obj.exec_command("cd /tmp/work_dir/thrift-0.17.0/lib/py\n; sudo python3 setup.py install")
             ssh_obj.close()
-
+#cd /tmp/work_dir/handler
+# rm -r gen-py
+#thrift --gen py Handler.thrift
     def _update_ips(self, host_node, handy_node = None):
         ssh_obj = host_node.ssh_obj
         ssh_obj.connect(each_user+self.hostname, username=self.usern, key_filename='craq')
