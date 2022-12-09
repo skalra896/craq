@@ -102,11 +102,12 @@ class ServiceHandler:
         if(self.map[key]["dirtybit"] == 0):   #data is commited at current node
             return self.map[key]["msg"]
         
-        bitAtTail = self.readTail(key)       #check dirty bit at tail
-        
-        if bitAtTail == 0:                      # data is commited at tail
-            return self.map[key]["msg"]        # return data
-        
+        if self.tail is not None: 
+            bitAtTail = self.readTail(key)       #check dirty bit at tail
+            
+            if bitAtTail == 0:                      # data is commited at tail
+                return self.map[key]["msg"]        # return data
+            
         return -1    
 
     def readTail(self, key):
