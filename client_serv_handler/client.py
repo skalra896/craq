@@ -10,9 +10,8 @@ import random
 
 import sys
 import time
-# Example files
-from Example import *
-from Example.ttypes import *
+from Handler import *
+from Handler.ttypes import *
 
 # Thrift files
 from thrift import Thrift
@@ -102,9 +101,9 @@ def main():
     parser = argparse.ArgumentParser(
                     prog = 'CRAQ Client',
                     description = 'Parses args through cli')
-    parser.add_argument('--write', type=int)
-    parser.add_argument('--read', type=int)
-    parser.add_argument('--skew_read', type=int)
+    parser.add_argument('--write', type=int, default=10)
+    parser.add_argument('--read', type=int, default=0)
+    parser.add_argument('--skew_read', type=int, default=0)
     args = parser.parse_args()
     write_ops = args.write
     read_ops = args.read
@@ -112,7 +111,7 @@ def main():
 
     client_obj = Client(write_ops, read_ops, skew_read_ops)
     client_obj.connect_servers()
-    #client_obj.run_ops()
+    client_obj.run_ops()
     for ip in client_obj.server_ips:
         client_obj.ips_dict[ip]['transport'].close()
     
