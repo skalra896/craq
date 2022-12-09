@@ -83,15 +83,14 @@ class ServiceHandler:
             self.ack(key)                             # commit + ack back                            
      
     def ack(self, key):
-        if self.index == 0: return 
-
-        print('inside ack method sending from %s to %s ' % (self.server_ips[self.index], self.server_ips[self.index - 1]))
-        self.map[key]["dirtybit"] = 0
-        try:
-            self.prev.ack(key)
-            print('sent ack from %s to %s ' % (self.server_ips[self.index], self.server_ips[self.index - 1]))
-        except Thrift.TException as tx:
-            print('writeSuccessor couldnt pass message: %s' % (tx.message))
+        if self.index != 0:
+            print('inside ack method sending from %s to %s ' % (self.server_ips[self.index], self.server_ips[self.index - 1]))
+            self.map[key]["dirtybit"] = 0
+            try:
+                self.prev.ack(key)
+                print('sent ack from %s to %s ' % (self.server_ips[self.index], self.server_ips[self.index - 1]))
+            except Thrift.TException as tx:
+                print('writeSuccessor couldnt pass message: %s' % (tx.message))
 
 
     def writeSuccessor(self, key, value):
