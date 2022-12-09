@@ -9,7 +9,7 @@ import argparse
 import random
 
 import sys
-
+import time
 # Example files
 from Example import *
 from Example.ttypes import *
@@ -22,55 +22,81 @@ from thrift.protocol import TBinaryProtocol
 # your gen-py dir
 sys.path.append('gen-py')
 
+class Client:
+    server_ips = ["10.10.1.1", "10.10.1.2", "10.10.1.3"]
+    handy = ""
+    port = 9090
 
-server_ips = ["10.10.1.1", "10.10.1.2", "10.10.1.3"]
-handy = ""
-port = 9090
+    ips_dict = {}
 
-ips_dict = {}
+    def __init__(self, write, read, skew_read):
+        self.write_ops = write
+        self.read_ops = read
+        self.skew_read_ops = skew_read
+        self.write_count = 0
+        self.read_count = 0
+        self.skew_read_count = 0
+        self.read_time = 0
+        self.write_time = 0
+        self.skew_read_time = 0
 
-for ip in server_ips:
-    try:
-        transport = TSocket.TSocket(ip , port)
-        transport = TTransport.TBufferedTransport(transport)
-        protocol = TBinaryProtocol.TBinaryProtocol(transport)  
-        # Set client to our Example
-        client = Example.Client(protocol)
-        ips_dict[ip] = {}
-        ips_dict[ip]['host'] = ip
-        ips_dict[ip]['transport'] = transport
-        ips_dict[ip]['protocol'] = protocol
-        ips_dict[ip]['client'] = client
-        ips_dict[ip]['transport'].open()
-    except Thrift.TException as tx:
-        print('Something went wrong : %s' % (tx.message))
+    def connect_servers(self):
+        for ip in server_ips:
+            try:
+                print('connecting host')
+                transport = TSocket.TSocket(ip , self.port)
+                transport = TTransport.TBufferedTransport(transport)
+                protocol = TBinaryProtocol.TBinaryProtocol(transport)  
+                # Set client to our Example
+                client = Handler.Client(protocol)
+                self.ips_dict[ip] = {}
+                self.ips_dict[ip]['host'] = ip
+                self.ips_dict[ip]['transport'] = transport
+                self.ips_dict[ip]['protocol'] = protocol
+                self.ips_dict[ip]['client'] = client
+                self.ips_dict[ip]['transport'].open()
+                print('index : %s calling set node connection' %i)
+                client.set_node_connections()
+                print('done connection')
+            except Thrift.TException as tx:
+                print('Something went wrong : %s' % (tx.message))
 
-def write(oprs):
-    ip_dict = ips_dict.get(server_ips[0])
-    if ip_dict == None: return
-    for i in range(oprs):
-        # Run showCurrentTimestamp() method on server
-        client = ip_dict.client
-        client.write(i, i)
-        print(data)
+    def run_ops(self):
+        start_time = time.time()
+        self.write()
+        self.write_time = time.time() - start_time
+        start_time = time.time()
+        self.read()
+        self.read_time = time.time() - start_time
+        start_time = time.time()
+        self.skew_read()
+        self.skew_read_time = time.time() - start_time
+
+    def write(self):
+        ip_dict = self.ips_dict.get(server_ips[0])
+        if ip_dict == None: return
+        for i in range(self.write_ops):
+            client = ip_dict.client
+            client.write(i, i)
+            self.write_count += 1      
+            
+    def read(self):
+        for i in range(self.read_ops):
+            idx = random.randint(0, 2)
+            ip_dict = self.ips_dict.get(server_ips[idx])
+            if ip_dict == None: continue
+            client = ip_dict.client
+            data = client.read(i)
+            if data: self.read_count += 1
         
-def read(oprs):
-    for i in range(oprs):
+    def skew_read(self):
         idx = random.randint(0, 2)
-        ip_dict = ips_dict.get(server_ips[idx])
-        if ip_dict == None: continue
+        ip_dict = self.ips_dict.get(server_ips[idx])
+        if ip_dict == None: return
         client = ip_dict.client
-        data = client.read(i)
-        print(data)
-    
-def skew_read(oprs):
-    idx = random.randint(0, 2)
-    ip_dict = ips_dict.get(server_ips[idx])
-    if ip_dict == None: return
-    client = ip_dict.client
-    for i in range(oprs):
-        data = client.read(i)
-        print(data)
+        for i in range(self.skew_read_ops):
+            data = client.read(i)
+            if data: self.skew_read_count += 1
 
 def main():
     parser = argparse.ArgumentParser(
@@ -83,15 +109,10 @@ def main():
     write_ops = args.write
     read_ops = args.read
     skew_read_ops = args.skew_read_ops
-    if write_ops:
-        write(client, write_ops)
 
-    if read_ops:
-        read(client, read_ops)
-
-    if skew_read_ops:
-        skew_read(client, skew_read_ops)
-        
+    client_obj = Client(write_ops, read_ops, skew_read_ops)
+    client_obj.run_ops()
     for ip in server_ips:
-        ips_dict[ip]['transport'].close()
+        client_obj.ips_dict[ip]['transport'].close()
+    
 main()
