@@ -84,14 +84,13 @@ class ServiceHandler:
      
     def ack(self, key):
         self.map[key]["dirtybit"] = 0
-        print('inside ack method sending from %s to %s ' % (self.server_ips[self.index], self.server_ips[self.index - 1]))
-        if self.index != 0:
-            if self.index != self.length - 1:
-                try:
-                    self.prev.ack(key)
-                    print('sent ack from %s to %s ' % (self.server_ips[self.index], self.server_ips[self.index - 1]))
-                except Thrift.TException as tx:
-                    print('Ack couldnt pass message: %s' % (tx.message))
+        print('inside ack method sending from %s' % (self.server_ips[self.index]))
+        if self.prev is not None: 
+            try:
+                self.prev.ack(key)
+                print('sent ack from %s to %s ' % (self.server_ips[self.index], self.server_ips[self.index - 1]))
+            except Thrift.TException as tx:
+                print('Ack couldnt pass message: %s' % (tx.message))
 
     def read(self, key):
         print('making read at index: %s '% (self.index))
