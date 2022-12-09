@@ -97,7 +97,6 @@ class ServiceHandler:
     def writeSuccessor(self, key, value):
         try:
             val = self.next.write(key, value)
-            return val
 
         except Thrift.TException as tx:
             print('writeSuccessor couldnt pass message: %s' % (tx.message))
