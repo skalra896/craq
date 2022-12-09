@@ -9,6 +9,8 @@ import argparse
 import random
 
 import sys
+# your gen-py dir
+sys.path.append('gen-py')
 import time
 from Handler import *
 from Handler.ttypes import *
@@ -18,8 +20,6 @@ from thrift import Thrift
 from thrift.transport import TSocket
 from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
-# your gen-py dir
-sys.path.append('gen-py')
 
 class Client:
     server_ips = ["155.98.39.2", "155.98.39.3", "155.98.39.4"]
@@ -76,7 +76,7 @@ class Client:
         ip_dict = self.ips_dict.get(self.server_ips[0])
         if ip_dict == None: return
         for i in range(self.write_ops):
-            client = ip_dict.client
+            client = ip_dict['client']
             client.write(i, i)
             self.write_count += 1      
             
@@ -85,7 +85,7 @@ class Client:
             idx = random.randint(0, 2)
             ip_dict = self.ips_dict.get(self.server_ips[idx])
             if ip_dict == None: continue
-            client = ip_dict.client
+            client = ip_dict['client']
             data = client.read(i)
             if data: self.read_count += 1
         
@@ -93,7 +93,7 @@ class Client:
         idx = random.randint(0, 2)
         ip_dict = self.ips_dict.get(self.server_ips[idx])
         if ip_dict == None: return
-        client = ip_dict.client
+        client = ip_dict['client']
         for i in range(self.skew_read_ops):
             data = client.read(i)
             if data: self.skew_read_count += 1
@@ -108,7 +108,7 @@ def main():
     args = parser.parse_args()
     write_ops = args.write
     read_ops = args.read
-    skew_read_ops = args.skew_read_ops
+    skew_read_ops = args.skew_read
 
     client_obj = Client(write_ops, read_ops, skew_read_ops)
     client_obj.connect_servers()
