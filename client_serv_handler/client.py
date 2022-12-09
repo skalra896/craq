@@ -23,8 +23,8 @@ from thrift.protocol import TBinaryProtocol
 sys.path.append('gen-py')
 
 class Client:
-    server_ips = ["10.10.1.1", "10.10.1.2", "10.10.1.3"]
-    handy = ""
+    server_ips = ["155.98.39.2", "155.98.39.3", "155.98.39.4"]
+    handy = "155.98.39.100"
     port = 9090
 
     ips_dict = {}
