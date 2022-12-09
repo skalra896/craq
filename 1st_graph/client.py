@@ -88,7 +88,7 @@ class Client:
             client = ip_dict['client']
             data = client.read(i)
             if data != -1 : self.read_count += 1
-            return data
+        return 0
         
     def skew_read(self):
         idx = random.randint(0, 2)
