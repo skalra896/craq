@@ -80,7 +80,7 @@ class ServiceHandler:
             self.writeSuccessor(key, val)
 
         else:                                              # tail node
-            self.ack(self, key)                             # commit + ack back                            
+            self.ack(key)                             # commit + ack back                            
      
     def ack(self, key):
         if self.index == 0: return 
