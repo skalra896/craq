@@ -98,9 +98,13 @@ class craq:
     def add_client_server_files(self):
         for node in ([self.client_node, self.handy_node] + self.nodes_list):
             each_user = node.user
+            ssh_obj = node.ssh_obj
+            ssh_obj.connect(node.user+self.hostname, username=self.usern, key_filename='craq')
+            stdin, stdout, stderr = ssh_obj.exec_command("cd /tmp/work_dir\n; sudo rm -rf 1st_graph")
             #os.popen("echo 2225 | sudo -S scp -i craq -o StrictHostKeyChecking=no -r handler %s@%s%s:/tmp/work_dir/"%(self.usern,each_user,self.hostname)).read()
             #os.popen("echo 2225 | sudo -S scp -i craq -o StrictHostKeyChecking=no -r client_serv_handler %s@%s%s:/tmp/work_dir/"%(self.usern,each_user,self.hostname)).read()
             os.popen("echo 2225 | sudo -S scp -i craq -o StrictHostKeyChecking=no -r 1st_graph %s@%s%s:/tmp/work_dir/"%(self.usern,each_user,self.hostname)).read()
+            ssh_obj.close()
 
     def add_setup_obj(self):
         for node in ([self.client_node, self.handy_node] + self.nodes_list):
@@ -145,6 +149,7 @@ class craq:
     def _update_ips(self, host_node, handy_node = None):
         ssh_obj = host_node.ssh_obj
         ssh_obj.connect(host_node.user+self.hostname, username=self.usern, key_filename='craq')
+        #Revisit for filename
         stdin, stdout, stderr = ssh_obj.exec_command("sudo sed -i 's/host = .*/host = %s/'"%(self.ip_list))
         stdin, stdout, stderr = ssh_obj.exec_command("cd /tmp/work_dir/1st_graph\n; rm -r gen-py")
         stdin, stdout, stderr = ssh_obj.exec_command("cd /tmp/work_dir/1st_graph\n; thrift --gen py Handler.thrift")

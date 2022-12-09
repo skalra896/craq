@@ -73,13 +73,29 @@ class Client:
         self.skew_read()
         self.skew_read_time = time.time() - start_time
 
+    def run_ops_for_time(self, time_sec=1):
+        start_time = time.time()
+        ip_dict = self.ips_dict.get(self.server_ips[0])
+        if ip_dict == None: return
+        i=0
+        while(time.time() - start_time <= time_sec):
+            client = ip_dict['client']
+            client.write(i, i)
+            self.write_count += 1
+            i += 1
+
+            #self.read()
+            #self.skew_read()
+
     def write(self):
         ip_dict = self.ips_dict.get(self.server_ips[0])
         if ip_dict == None: return
-        for i in range(self.write_ops):
+        i=0
+        while 1:
             client = ip_dict['client']
             client.write(i, i)
-            self.write_count += 1      
+            self.write_count += 1
+            i += 1
             
     def read(self):
         for i in range(self.read_ops):
@@ -114,6 +130,21 @@ def main():
 
     client_obj = Client(write_ops, read_ops, skew_read_ops)
     client_obj.connect_servers()
+    import multiprocessing
+    from multiprocessing import Process
+    ct = []
+    for op in range(10):
+        proc = []
+        for _ in range(10):
+            p=Process(target=client_obj.run_ops_for_time())
+            #print ("count is",i)
+            p.start()
+            proc.append(p)
+        for p in proc:
+            p.join()
+        ct.append(client_obj.write_count)
+        client_obj.write_count = 0
+    import pdb; pdb.set_trace()
     client_obj.run_ops()
     for ip in client_obj.server_ips:
         client_obj.ips_dict[ip]['transport'].close()

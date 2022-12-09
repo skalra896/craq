@@ -8,3 +8,12 @@ python3 craq.py --users pc304 pc300 pc202 pc203 pc204 --ips 155.98.39.104 155.98
 
 
 python3 craq.py --users pc304 pc300 --ips 155.98.39.104 155.98.39.100
+
+
+
+curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+python3 get-pip.py --force-reinstall
+
+
+tc:
+sudo tc qdisc add dev enp6s7 root netem delay 100ms
