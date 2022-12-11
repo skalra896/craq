@@ -78,7 +78,7 @@ class Client:
         ip_dict = self.ips_dict.get(self.server_ips[0])
         if ip_dict == None: return
         while(time.time() - start_time <= time_sec):
-            digits = i%10000000
+            digits = len(str(i))
             val = int('0'*(1000-digits)+str(i))
             client = ip_dict['client']
             client.write(i, val)
