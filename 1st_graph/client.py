@@ -23,7 +23,7 @@ from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
 
 class Client:
-    server_ips = ["155.98.39.2", "155.98.39.3", "155.98.39.4"]
+    server_ips = ["10.10.1.3", "10.10.1.2", "10.10.1.5"]
     handy = "155.98.39.100"
     port = 9090
 

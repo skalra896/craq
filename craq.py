@@ -84,7 +84,7 @@ class craq:
     def _server_stop(self, node):
         ssh_obj = node.ssh_obj
         ssh_obj.connect(node.user+self.hostname, username=self.usern, key_filename='craq')
-        stdin, stdout, stderr = ssh_obj.exec_command("ps -ef | grep python3 | grep ServerPython.py")
+        stdin, stdout, stderr = ssh_obj.exec_command("ps -ef | grep python3 | grep Server.py")
         response = stdout.readlines()
         for each_res in response:
             proc = each_res.strip().split()[1]
@@ -150,7 +150,10 @@ class craq:
         ssh_obj = host_node.ssh_obj
         ssh_obj.connect(host_node.user+self.hostname, username=self.usern, key_filename='craq')
         #Revisit for filename
-        stdin, stdout, stderr = ssh_obj.exec_command("sudo sed -i 's/host = .*/host = %s/'"%(self.ip_list))
+        if len(self.ip_list) == 3:
+            server_ips_str = "[\"10.10.1.3\", \"10.10.1.2\", \"10.10.1.5\"]"
+            #server_ips_str = ["10.10.1.3", "10.10.1.2", "10.10.1.5"]
+            stdin, stdout, stderr = ssh_obj.exec_command("sudo sed -i 's/server_ips = .*/server_ips = %s/' /tmp/work_dir/1st_graph/Server.py"% (server_ips_str))
         stdin, stdout, stderr = ssh_obj.exec_command("cd /tmp/work_dir/1st_graph\n; rm -r gen-py")
         stdin, stdout, stderr = ssh_obj.exec_command("cd /tmp/work_dir/1st_graph\n; thrift --gen py Handler.thrift")
         if handy_node:

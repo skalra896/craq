@@ -23,7 +23,7 @@ from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
 
 class Client:
-    server_ips = ["155.98.39.2", "155.98.39.3", "155.98.39.4"]
+    server_ips = ["10.10.1.3", "10.10.1.2", "10.10.1.5"]
     handy = "155.98.39.100"
     port = 9090
 
@@ -47,7 +47,7 @@ class Client:
                 print('connecting host')
                 transport = TSocket.TSocket(ip , self.port)
                 transport = TTransport.TBufferedTransport(transport)
-                protocol = TBinaryProtocol.TBinaryProtocol(transport)  
+                protocol = TBinaryProtocol.TBinaryProtocol(transport)
                 # Set client to our Example
                 client = Handler.Client(protocol)
                 self.ips_dict[ip] = {}
@@ -73,11 +73,10 @@ class Client:
         self.skew_read()
         self.skew_read_time = time.time() - start_time
 
-    def run_ops_for_time(self, time_sec=1):
+    def run_write_ops_for_time(self, i=0, time_sec=1):
         start_time = time.time()
         ip_dict = self.ips_dict.get(self.server_ips[0])
         if ip_dict == None: return
-        i=0
         while(time.time() - start_time <= time_sec):
             client = ip_dict['client']
             client.write(i, i)
@@ -86,6 +85,32 @@ class Client:
 
             #self.read()
             #self.skew_read()
+
+    def run_skew_read_ops_for_time(self, i=0, time_sec=1):
+        self.total_skewed_ops = 0
+        start_time = time.time()
+        idx = random.randint(0, 2)
+        ip_dict = self.ips_dict.get(self.server_ips[idx])
+        if ip_dict == None: return
+        while(time.time() - start_time <= time_sec):
+            self.total_skewed_ops += 1
+            client = ip_dict['client']
+            client.read(i)
+            self.skew_read_count += 1
+            i += 1
+
+    def run_read_ops_for_time(self, i=0, time_sec=1):
+        self.total_read_ops = 0
+        start_time = time.time()
+        while(time.time() - start_time <= time_sec):
+            self.total_read_ops += 1
+            idx = random.randint(0, 2)
+            ip_dict = self.ips_dict.get(self.server_ips[idx])
+            if ip_dict == None: return
+            client = ip_dict['client']
+            client.read(i)
+            self.read_count += 1
+            i += 1
 
     def write(self):
         ip_dict = self.ips_dict.get(self.server_ips[0])
@@ -96,7 +121,7 @@ class Client:
             client.write(i, i)
             self.write_count += 1
             i += 1
-            
+
     def read(self):
         for i in range(self.read_ops):
             idx = random.randint(0, 2)
@@ -106,7 +131,7 @@ class Client:
             data = client.read(i)
             if data != -1 : self.read_count += 1
         return 0
-        
+
     def skew_read(self):
         idx = random.randint(0, 2)
         ip_dict = self.ips_dict.get(self.server_ips[idx])
@@ -132,21 +157,35 @@ def main():
     client_obj.connect_servers()
     import multiprocessing
     from multiprocessing import Process
-    ct = []
-    for op in range(10):
+    write_list = []
+    read_list = []
+    skew_read_list = []
+    for op in range(10):#no. of experiment
         proc = []
-        for _ in range(10):
-            p=Process(target=client_obj.run_ops_for_time())
+        i=0
+        for _ in range(3):#3 thread of write, read, skew_read: total 9 threads
+            p_write=Process(target=client_obj.run_write_ops_for_time(i=i))
+            p_read=Process(target=client_obj.run_read_ops_for_time(i=i))
+            p_skew_read=Process(target=client_obj.run_skew_read_ops_for_time(i=i))
             #print ("count is",i)
-            p.start()
-            proc.append(p)
+            p_write.start()
+            p_read.start()
+            p_skew_read.start()
+            proc.append(p_write)
+            proc.append(p_read)
+            proc.append(p_skew_read)
+            i += 10000
         for p in proc:
             p.join()
-        ct.append(client_obj.write_count)
+        write_list.append(client_obj.write_count)
+        read_list.append(client_obj.read_count)
+        skew_read_list.append(client_obj.skew_read_count)
         client_obj.write_count = 0
+        client_obj.read_count = 0
+        client_obj.skew_read_count = 0
     import pdb; pdb.set_trace()
     client_obj.run_ops()
     for ip in client_obj.server_ips:
         client_obj.ips_dict[ip]['transport'].close()
-    
+
 main()
