@@ -79,7 +79,7 @@ class Client:
         if ip_dict == None: return
         while(time.time() - start_time <= time_sec):
             digits = len(str(i))
-            val = int('0'*(1000-digits)+str(i))
+            val = int(str(i)+'0'*(1000-digits))
             client = ip_dict['client']
             client.write(i, val)
             self.write_count += 1
