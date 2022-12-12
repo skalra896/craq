@@ -95,7 +95,7 @@ class ServiceHandler:
     def read(self, key):
         print('making read at index: %s '% (self.index))
         if self.map.get(key) == None: 
-            return -1                     #key is not present
+            return '-1'                     #key is not present
         
         print('Dirty bit val: %s'%(self.map[key]["dirtybit"]))
 
@@ -108,7 +108,7 @@ class ServiceHandler:
             if bitAtTail == 0:                      # data is commited at tail
                 return self.map[key]["msg"]        # return data
             
-        return -1    
+        return '-1'    
 
     def readTail(self, key):
         print('Checking tail for read') 
@@ -125,7 +125,7 @@ class ServiceHandler:
 
     def writeSuccessor(self, key, value):
         try:
-            val = self.next.write(key, value)
+            self.next.write(key, value)
 
         except Thrift.TException as tx:
             print('writeSuccessor could not pass message: %s' % (tx.message))

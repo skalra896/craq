@@ -81,7 +81,7 @@ class Client:
         if ip_dict == None: return
         while(time.time() - start_time <= time_sec):
             digits = len(str(i))
-            val = int(str(i)+'0'*(1000-digits))
+            val = str(i)+'0'*(size-digits)
             client = ip_dict['client']
             client.write(i, val)
             self.write_count += 1
@@ -100,7 +100,7 @@ class Client:
             self.total_skewed_ops += 1
             client = ip_dict['client']
             val = client.read(i)
-            if val == -1: self.skew_dirty_read += 1
+            if val == '-1': self.skew_dirty_read += 1
             self.skew_read_count += 1
             i += 1
 
@@ -114,7 +114,7 @@ class Client:
             if ip_dict == None: return
             client = ip_dict['client']
             val = client.read(i)
-            if val == -1: self.dirty_read += 1
+            if val == '-1': self.dirty_read += 1
             self.read_count += 1
             i += 1
 
