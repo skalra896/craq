@@ -163,38 +163,47 @@ def main():
     client_obj.connect_servers()
     import multiprocessing
     from multiprocessing import Process
-    write_list = []
-    read_list = []
-    dirty_read_list = []
-    skew_read_list = []
-    dirty_skew_read_list = []
-    for op in range(10):#no. of experiment
-        proc = []
-        i=0
-        for _ in range(10):#10 thread of write, read, skew_read: total 9 threads
-            p_write=Process(target=client_obj.run_write_ops_for_time(i=i))
-            p_read=Process(target=client_obj.run_read_ops_for_time(i=i))
-            p_skew_read=Process(target=client_obj.run_skew_read_ops_for_time(i=i))
-            #print ("count is",i)
-            p_write.start()
-            p_read.start()
-            p_skew_read.start()
-            proc.append(p_write)
-            proc.append(p_read)
-            proc.append(p_skew_read)
-            i += 10000
-        for p in proc:
-            p.join()
-        write_list.append(client_obj.write_count)
-        read_list.append(client_obj.read_count)
-        dirty_read_list.append(client_obj.dirty_read)
-        skew_read_list.append(client_obj.skew_read_count)
-        dirty_skew_read_list.append(client_obj.skew_dirty_read)
-        client_obj.write_count = 0
-        client_obj.read_count = 0
-        client_obj.dirty_read = 0
-        client_obj.skew_read_count = 0
-        client_obj.skew_dirty_read = 0
+    sizes = [500,5000]
+    result_dict = {}
+    for size in sizes:
+        result_dict[size] = {}
+        write_list = []
+        read_list = []
+        dirty_read_list = []
+        skew_read_list = []
+        dirty_skew_read_list = []
+        for op in range(10):#no. of experiment
+            proc = []
+            i=0
+            for _ in range(10):#10 thread of write, read, skew_read: total 9 threads
+                p_write=Process(target=client_obj.run_write_ops_for_time(i=i, size=size))
+                p_read=Process(target=client_obj.run_read_ops_for_time(i=i))
+                p_skew_read=Process(target=client_obj.run_skew_read_ops_for_time(i=i))
+                #print ("count is",i)
+                p_write.start()
+                p_read.start()
+                p_skew_read.start()
+                proc.append(p_write)
+                proc.append(p_read)
+                proc.append(p_skew_read)
+                i += 10000
+            for p in proc:
+                p.join()
+            write_list.append(client_obj.write_count)
+            read_list.append(client_obj.read_count)
+            dirty_read_list.append(client_obj.dirty_read)
+            skew_read_list.append(client_obj.skew_read_count)
+            dirty_skew_read_list.append(client_obj.skew_dirty_read)
+            result_dict[size]['write_list'] = write_list
+            result_dict[size]['read_list'] = read_list
+            result_dict[size]['dirty_read_list'] = dirty_read_list
+            result_dict[size]['skew_read_list'] = skew_read_list
+            result_dict[size]['dirty_skew_read_list'] = dirty_skew_read_list
+            client_obj.write_count = 0
+            client_obj.read_count = 0
+            client_obj.dirty_read = 0
+            client_obj.skew_read_count = 0
+            client_obj.skew_dirty_read = 0
     import pdb; pdb.set_trace()
     client_obj.run_ops()
     for ip in client_obj.server_ips:
