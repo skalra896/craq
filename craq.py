@@ -74,7 +74,7 @@ class craq:
     def _server_run(self, node):
         ssh_obj = node.ssh_obj
         ssh_obj.connect(node.user+self.hostname, username=self.usern, key_filename='craq')
-        stdin, stdout, stderr = ssh_obj.exec_command("cd /tmp/work_dir/serverExample\n; python3 ServerPython.py")
+        stdin, stdout, stderr = ssh_obj.exec_command("cd /tmp/work_dir/1st_graph\n; python3 Server.py")
         ssh_obj.close()
 
     def run_servers(self):
