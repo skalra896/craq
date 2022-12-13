@@ -7,7 +7,7 @@
 #
 import argparse
 import random
-
+import multithreading
 import sys
 # your gen-py dir
 sys.path.append('gen-py')
@@ -161,8 +161,6 @@ def main():
 
     client_obj = Client(write_ops, read_ops, skew_read_ops)
     client_obj.connect_servers()
-    import multiprocessing
-    from multiprocessing import Process
     sizes = [500,5000]
     result_dict = {}
     for size in sizes:
@@ -173,22 +171,21 @@ def main():
         skew_read_list = []
         dirty_skew_read_list = []
         for op in range(10):#no. of experiment
-            proc = []
+            threads_list = []
             i=0
             for _ in range(10):#10 thread of write, read, skew_read: total 9 threads
-                p_write=Process(target=client_obj.run_write_ops_for_time(i=i, size=size))
-                p_read=Process(target=client_obj.run_read_ops_for_time(i=i))
-                p_skew_read=Process(target=client_obj.run_skew_read_ops_for_time(i=i))
+                p_write = threading.Thread(target=client_obj.run_write_ops_for_time, kargs={i:i,size:size})
+                p_read=threading.Thread(target=client_obj.run_write_ops_for_time, kargs={i:i})
+                p_skew_read=threading.Thread(target=client_obj.run_write_ops_for_time, kargs={i:i})
                 #print ("count is",i)
-                p_write.start()
-                p_read.start()
-                p_skew_read.start()
-                proc.append(p_write)
-                proc.append(p_read)
-                proc.append(p_skew_read)
+                threads_list.append(p_write)
+                threads_list.append(p_read)
+                threads_list.append(p_skew_read)
                 i += 10000
-            for p in proc:
-                p.join()
+            for each_thread in threads_list:
+                each_thread.start()
+            for each_thread in threads_list:
+                each_thread.join()
             write_list.append(client_obj.write_count)
             read_list.append(client_obj.read_count)
             dirty_read_list.append(client_obj.dirty_read)
@@ -210,27 +207,3 @@ def main():
         client_obj.ips_dict[ip]['transport'].close()
 
 main()
-
-# #thread
-
-# import threading
-# from queue import Queue
-
-# def read(self, key):
-#     print(key)
-
-# def write(self, key, val):
-#     print(key, val)
-
-# queue  =  Queue()
-
-# for x in range(2):
-#     r = threading.Thread(target=read, args=(1,1))
-#     queue.put( r)
-
-# for x in range(2):
-#     queue.get().start()
-    
-# for x in range(2):
-#     queue.join()
-
