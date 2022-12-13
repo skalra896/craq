@@ -119,3 +119,27 @@ def main():
         client_obj.ips_dict[ip]['transport'].close()
     
 main()
+
+# #thread
+
+# import threading
+# from queue import Queue
+
+# def read(self, key):
+#     print(key)
+
+# def write(self, key, val):
+#     print(key, val)
+
+# queue  =  Queue()
+
+# for x in range(2):
+#     r = threading.Thread(target=read, args=(1,1))
+#     queue.put( r)
+
+# for x in range(2):
+#     queue.get().start()
+    
+# for x in range(2):
+#     queue.join()
+
