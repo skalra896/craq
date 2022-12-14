@@ -149,123 +149,128 @@ class Client:
             data = client.read(i)
             if data != -1: self.skew_read_count += 1
 
-def run_for_latency(client_obj, load = False):
-    sizes = [500,5000]
-    latency_dict = {}
-    for size in sizes:
-        latency_dict[size] = {}
-        write_ip_dict = client_obj.ips_dict.get(client_obj.server_ips[0])
-        client = write_ip_dict['client']
-        i = 1
-        val = str(i)+'0'*(size-1)
-        write_start_time = time.time()
-        client.write(i, val)
-        write_latency = time.time() - write_time
-        latency_dict[size]['write_latenct'] = write_latency
-        read_ip_dict = client_obj.ips_dict.get(client_obj.server_ips[1])
-        client = read_ip_dict['client']
-        read_start_time = time.time()
-        client.read(i)
-        read_latency = time.time() - read_time
-        latency_dict[size]['read_latency'] = read_latency
-    if load:
+    def run_for_latency(self, load = False):
+        sizes = [500,5000]
+        latency_dict = {}
+        for size in sizes:
+            latency_dict[size] = {}
+            write_ip_dict = self.ips_dict.get(self.server_ips[0])
+            client = write_ip_dict['client']
+            i = 1
+            val = str(i)+'0'*(size-1)
+            write_start_time = time.time()
+            client.write(i, val)
+            write_latency = time.time() - write_time
+            latency_dict[size]['write_latenct'] = write_latency
+            read_ip_dict = self.ips_dict.get(self.server_ips[1])
+            client = read_ip_dict['client']
+            read_start_time = time.time()
+            client.read(i)
+            read_latency = time.time() - read_time
+            latency_dict[size]['read_latency'] = read_latency
+        if load:
+            try:
+                with open('read_write_latency_with_load.json', 'w') as fp:
+                    json.dump(latency_dict, fp)
+            except:
+                import pdb; pdb.set_trace()
+        else:
+            try:
+                with open('read_write_latency_no_load.json', 'w') as fp:
+                    json.dump(latency_dict, fp)
+            except:
+                import pdb; pdb.set_trace()
+
+
+    def run_for_read_write_throughput(self):
+        sizes = [500,5000]
+        result_dict = {}
+        self.write_count = 0
+        self.read_count = 0
+        for size in sizes:
+            result_dict[size] = {}
+            write_list = []
+            read_list = []
+            for op in range(10):
+                threads_list = []
+                i=200000
+                for _ in range(10):#10 thread for write
+                    p_write = threading.Thread(target=self.run_write_ops_for_time, kwargs={'i':i,'size':size})
+                    threads_list.append(p_write)
+                    i += 10000
+                for each_thread in threads_list:
+                    each_thread.start()
+                    each_thread.join()
+                write_list.append(self.write_count)
+                threads_list = []
+                for _ in range(30):#30 threads for read
+                    p_read=threading.Thread(target=self.run_read_ops_for_time, kwargs={'i':i})
+                    threads_list.append(p_read)
+                for each_thread in threads_list:
+                    each_thread.start()
+                    each_thread.join()
+                read_list.append(self.read_count)
+                self.write_count = 0
+                self.read_count = 0
+            result_dict[size]['write_list'] = write_list
+            result_dict[size]['read_list'] = read_list
         try:
-            with open('read_write_latency_with_load.json', 'w') as fp:
-                json.dump(latency_dict, fp)
+            with open('read_write_thp.json', 'w') as fp:
+                json.dump(result_dict, fp)
         except:
             import pdb; pdb.set_trace()
-    else:
+
+    def run_for_table(self):
+        sizes = [500,5000]
+        result_dict = {}
+        for size in sizes:
+            result_dict[size] = {}
+            write_list = []
+            read_list = []
+            dirty_read_list = []
+            clean_read_list = []
+            skew_read_list = []
+            dirty_skew_read_list = []
+            i = 0
+            for op in range(10):#no. of experiment
+                threads_list = []
+                for _ in range(10):#10 thread of write, 30 for read
+                    p_write = threading.Thread(target=self.run_write_ops_for_time, kwargs={'i':i,'size':size})
+                    threads_list.append(p_write)
+                    for read_i in range(3):
+                        p_read=threading.Thread(target=self.run_read_ops_for_time, kwargs={'i':i})
+                        threads_list.append(p_read)
+                    #p_skew_read=threading.Thread(target=self.run_read_ops_for_time, kwargs={'i':i})
+                    #print ("count is",i)
+                    #threads_list.append(p_skew_read)
+                    i += 10000
+                for each_thread in threads_list:
+                    each_thread.start()
+                    each_thread.join()
+                write_list.append(self.write_count)
+                read_list.append(self.read_count)
+                dirty_read_list.append(self.dirty_read)
+                #skew_read_list.append(self.skew_read_count)
+                #dirty_skew_read_list.append(self.skew_dirty_read)
+                self.write_count = 0
+                self.read_count = 0
+                self.dirty_read = 0
+                self.skew_read_count = 0
+                self.skew_dirty_read = 0
+            result_dict[size]['write_list'] = write_list
+            result_dict[size]['read_list'] = read_list
+            result_dict[size]['dirty_read_list'] = dirty_read_list
+            for j in range(10):
+                clean_read_list.append(read_list[j]-dirty_read_list[j])
+            result_dict[size]['clean_read_list'] = clean_read_list
+            #result_dict[size]['skew_read_list'] = skew_read_list
+            #result_dict[size]['dirty_skew_read_list'] = dirty_skew_read_list
+            
         try:
-            with open('read_write_latency_no_load.json', 'w') as fp:
-                json.dump(latency_dict, fp)
+            with open('table_result.json', 'w') as fp:
+                json.dump(result_dict, fp)
         except:
             import pdb; pdb.set_trace()
-
-
-def run_for_read_write_throughput(client_obj):
-    sizes = [500,5000]
-    result_dict = {}
-    client_obj.write_count = 0
-    client_obj.read_count = 0
-    for size in sizes:
-        result_dict[size] = {}
-        write_list = []
-        read_list = []
-        for op in range(10):
-            threads_list = []
-            i=200000
-            for _ in range(10):
-                p_write = threading.Thread(target=client_obj.run_write_ops_for_time, kwargs={'i':i,'size':size})
-                threads_list.append(p_write)
-                i += 10000
-            for each_thread in threads_list:
-                each_thread.start()
-                each_thread.join()
-            write_list.append(client_obj.write_count)
-            threads_list = []
-            for _ in range(10):
-                p_read=threading.Thread(target=client_obj.run_read_ops_for_time, kwargs={'i':i})
-                threads_list.append(p_read)
-            for each_thread in threads_list:
-                each_thread.start()
-                each_thread.join()
-            read_list.append(client_obj.read_count)
-            client_obj.write_count = 0
-            client_obj.read_count = 0
-        result_dict[size]['write_list'] = write_list
-        result_dict[size]['read_list'] = read_list
-    try:
-        with open('read_write_thp.json', 'w') as fp:
-            json.dump(result_dict, fp)
-    except:
-        import pdb; pdb.set_trace()
-
-def run_for_table(client_obj):
-    sizes = [500,5000]
-    result_dict = {}
-    for size in sizes:
-        result_dict[size] = {}
-        write_list = []
-        read_list = []
-        dirty_read_list = []
-        skew_read_list = []
-        dirty_skew_read_list = []
-        i = 0
-        for op in range(10):#no. of experiment
-            threads_list = []
-            for _ in range(10):#10 thread of write, read, skew_read: total 9 threads
-                p_write = threading.Thread(target=client_obj.run_write_ops_for_time, kwargs={'i':i,'size':size})
-                p_read=threading.Thread(target=client_obj.run_read_ops_for_time, kwargs={'i':i})
-                #p_skew_read=threading.Thread(target=client_obj.run_read_ops_for_time, kwargs={'i':i})
-                #print ("count is",i)
-                threads_list.append(p_write)
-                threads_list.append(p_read)
-                #threads_list.append(p_skew_read)
-                i += 10000
-            for each_thread in threads_list:
-                each_thread.start()
-                each_thread.join()
-            write_list.append(client_obj.write_count)
-            read_list.append(client_obj.read_count)
-            dirty_read_list.append(client_obj.dirty_read)
-            #skew_read_list.append(client_obj.skew_read_count)
-            #dirty_skew_read_list.append(client_obj.skew_dirty_read)
-            client_obj.write_count = 0
-            client_obj.read_count = 0
-            client_obj.dirty_read = 0
-            client_obj.skew_read_count = 0
-            client_obj.skew_dirty_read = 0
-        result_dict[size]['write_list'] = write_list
-        result_dict[size]['read_list'] = read_list
-        result_dict[size]['dirty_read_list'] = dirty_read_list
-        #result_dict[size]['skew_read_list'] = skew_read_list
-        #result_dict[size]['dirty_skew_read_list'] = dirty_skew_read_list
-        
-    try:
-        with open('table_result.json', 'w') as fp:
-            json.dump(result_dict, fp)
-    except:
-        import pdb; pdb.set_trace()
 
 def main():
     parser = argparse.ArgumentParser(
@@ -282,15 +287,17 @@ def main():
     client_obj = Client(write_ops, read_ops, skew_read_ops)
     client_obj.connect_servers()
     
-    run_for_table(client_obj)
+    client_obj.run_for_table()
     #import pdb; pdb.set_trace()
     #client_obj.run_ops()
-    run_for_read_write_throughput(client_obj)
-    run_for_latency(client_obj)
-    p1 = multiprocessing.process(target = run_for_read_write_throughput(client_obj))
-    p2 = multiprocessing.process(target = run_for_latency(client_obj, load=True))
-    p1.start
-    p2.start
+    client_obj.run_for_read_write_throughput()
+    client_obj.run_for_latency()
+    p1 = multiprocessing.process(target = client_obj.run_for_read_write_throughput)
+    p2 = multiprocessing.process(target = client_obj.run_for_latency, kwargs={'load':True})
+    p1.start()
+    p2.start()
+    p1.join()
+    p2.join()
     for ip in client_obj.server_ips:
         client_obj.ips_dict[ip]['transport'].close()
 
