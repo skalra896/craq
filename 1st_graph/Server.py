@@ -71,7 +71,7 @@ class ServiceHandler:
   
         return client
 
-    def write_craq(self, key, val):
+    def write(self, key, val):
         print('making next connection set node connections, index: %s '% (self.index))
         
         self.map[key] = {"msg" : val, "dirtybit" : 1} #data is dirty
