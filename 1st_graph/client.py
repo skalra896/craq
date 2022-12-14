@@ -172,13 +172,13 @@ class Client:
             val = str(i)+'0'*(size-1)
             write_start_time = time.time()
             client.write(i, val)
-            write_latency = time.time() - write_time
-            latency_dict[size]['write_latenct'] = write_latency
+            write_latency = time.time() - write_start_time
+            latency_dict[size]['write_latency'] = write_latency
             read_ip_dict = self.ips_dict.get(self.server_ips[1])
             client = read_ip_dict['client']
             read_start_time = time.time()
             client.read(i)
-            read_latency = time.time() - read_time
+            read_latency = time.time() - read_start_time
             latency_dict[size]['read_latency'] = read_latency
         if load:
             try:
@@ -329,8 +329,15 @@ def main():
     client_obj.run_for_read_write_throughput()
     #client_obj.run_for_read_write_throughput(cr=True)
     client_obj.run_for_latency()
-    p1 = multiprocessing.process(target = client_obj.run_for_read_write_throughput())
-    p2 = multiprocessing.process(target = client_obj.run_for_latency(load=True))
+
+    def fun_run_for_read_write_throughput():
+        client_obj.run_for_read_write_throughput()
+
+    def fun_run_for_latency():
+        client_obj.run_for_latency(load=True)
+
+    p1 = multiprocessing.process(target = fun_run_for_read_write_throughput())
+    p2 = multiprocessing.process(target = fun_run_for_latency())
     p1.start()
     p2.start()
     p1.join()
