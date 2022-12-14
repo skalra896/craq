@@ -71,7 +71,7 @@ class ServiceHandler:
   
         return client
 
-    def write(self, key, val):
+    def write_craq(self, key, val):
         print('making next connection set node connections, index: %s '% (self.index))
         
         self.map[key] = {"msg" : val, "dirtybit" : 1} #data is dirty
@@ -80,7 +80,15 @@ class ServiceHandler:
             self.writeSuccessor(key, val)
 
         else:                                              # tail node
-            self.ack(key)                             # commit + ack back                            
+            self.ack(key)                             # commit + ack back        
+    
+    def write_cr(self, key, val):
+        print('making next connection set node connections, index: %s '% (self.index))
+        
+        self.map[key] = {"msg" : val, "dirtybit" : 0} #data is dirty
+
+        if self.next != None:                             # have next node
+            self.writeSuccessor(key, val)
      
     def ack(self, key):
         self.map[key]["dirtybit"] = 0
