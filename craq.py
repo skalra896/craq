@@ -74,13 +74,15 @@ class craq:
     def _server_run(self, node):
         ssh_obj = node.ssh_obj
         ssh_obj.connect(node.user+self.hostname, username=self.usern, key_filename='craq')
+        stdin, stdout, stderr = ssh_obj.exec_command("thrift --version")
+        stdout.read()
         stdin, stdout, stderr = ssh_obj.exec_command("cd /tmp/work_dir/1st_graph\n; python3 Server.py")
+        time.sleep(1)
         ssh_obj.close()
 
     def run_servers(self):
         for node in self.nodes_list:
             self._server_run(node)
-        time.sleep(5)
 
     def _server_stop(self, node):
         ssh_obj = node.ssh_obj
