@@ -287,7 +287,7 @@ def main():
     #client_obj.run_ops()
     run_for_read_write_throughput(client_obj)
     run_for_latency(client_obj)
-    p1 = multiprocessing.process(target = run_for_table(client_obj))
+    p1 = multiprocessing.process(target = run_for_read_write_throughput(client_obj))
     p2 = multiprocessing.process(target = run_for_latency(client_obj, load=True))
     p1.start
     p2.start
