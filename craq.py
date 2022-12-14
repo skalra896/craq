@@ -158,9 +158,9 @@ class craq:
         if len(self.ip_list) == 5:
             server_ips_str = "[\"10.10.1.3\", \"10.10.1.2\", \"10.10.1.5\", \"10.10.1.6\", \"10.10.1.7\"]"
             #server_ips_str = ["10.10.1.3", "10.10.1.2", "10.10.1.5"]
-        if len(self.ip_list):
+        if len(self.ip_list) == 7:
             server_ips_str = "[\"10.10.1.3\", \"10.10.1.2\", \"10.10.1.5\", \"10.10.1.6\", \"10.10.1.7\", \"10.10.1.8\", \"10.10.1.9\"]"
-            stdin, stdout, stderr = ssh_obj.exec_command("sudo sed -i 's/server_ips = .*/server_ips = %s/' /tmp/work_dir/1st_graph/Server.py"% (server_ips_str))
+        stdin, stdout, stderr = ssh_obj.exec_command("sudo sed -i 's/server_ips = .*/server_ips = %s/' /tmp/work_dir/1st_graph/Server.py"% (server_ips_str))
         stdin, stdout, stderr = ssh_obj.exec_command("cd /tmp/work_dir/1st_graph\n; rm -r gen-py")
         stdin, stdout, stderr = ssh_obj.exec_command("cd /tmp/work_dir/1st_graph\n; thrift --gen py Handler.thrift")
         if handy_node:
