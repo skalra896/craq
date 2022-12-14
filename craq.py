@@ -80,6 +80,7 @@ class craq:
     def run_servers(self):
         for node in self.nodes_list:
             self._server_run(node)
+        time.sleep(5)
 
     def _server_stop(self, node):
         ssh_obj = node.ssh_obj
@@ -152,7 +153,11 @@ class craq:
         #Revisit for filename
         if len(self.ip_list) == 3:
             server_ips_str = "[\"10.10.1.3\", \"10.10.1.2\", \"10.10.1.5\"]"
+        if len(self.ip_list) == 5:
+            server_ips_str = "[\"10.10.1.3\", \"10.10.1.2\", \"10.10.1.5\", \"10.10.1.6\", \"10.10.1.7\"]"
             #server_ips_str = ["10.10.1.3", "10.10.1.2", "10.10.1.5"]
+        if len(self.ip_list):
+            server_ips_str = "[\"10.10.1.3\", \"10.10.1.2\", \"10.10.1.5\", \"10.10.1.6\", \"10.10.1.7\", \"10.10.1.8\", \"10.10.1.9\"]"
             stdin, stdout, stderr = ssh_obj.exec_command("sudo sed -i 's/server_ips = .*/server_ips = %s/' /tmp/work_dir/1st_graph/Server.py"% (server_ips_str))
         stdin, stdout, stderr = ssh_obj.exec_command("cd /tmp/work_dir/1st_graph\n; rm -r gen-py")
         stdin, stdout, stderr = ssh_obj.exec_command("cd /tmp/work_dir/1st_graph\n; thrift --gen py Handler.thrift")
@@ -196,9 +201,11 @@ def main():
     if args.setup:
         craq_obj.setup_nodes()
         return
+    craq_obj.stop_servers()
     craq_obj.add_client_server_files()
     craq_obj.update_ips_client()
     craq_obj.update_ips_server()
+    craq_obj.run_servers()
     craq_obj.run_client(args.write_ops, args.read_ops, args.skew_read_ops)
 
 main()

@@ -25,7 +25,7 @@ from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
 
 class Client:
-    server_ips = ["10.10.1.3", "10.10.1.2", "10.10.1.5"]
+    server_ips = ["10.10.1.3", "10.10.1.2", "10.10.1.5", "10.10.1.6", "10.10.1.7"]
     handy = "155.98.39.100"
     port = 9090
 
@@ -161,7 +161,7 @@ class Client:
             data = client.read(i)
             if data != -1: self.skew_read_count += 1
 
-    def run_for_latency(self, load = False):
+    def run_for_latency(self, load=False):
         sizes = [500,5000]
         latency_dict = {}
         for size in sizes:
@@ -192,6 +192,14 @@ class Client:
                     json.dump(latency_dict, fp)
             except:
                 import pdb; pdb.set_trace()
+    
+    def run_for_load_latency(self):
+        latency_thread = threading.Thread(target=self.run_for_latency, kwargs={'load':True})
+        other_thread = threading.Thread(target=self.run_for_read_write_throughput)
+        latency_thread.start()
+        other_thread.start()
+        latency_thread.join()
+        other_thread.join()
 
 
     def run_for_read_write_throughput(self, cr=False):
@@ -329,19 +337,7 @@ def main():
     client_obj.run_for_read_write_throughput()
     #client_obj.run_for_read_write_throughput(cr=True)
     client_obj.run_for_latency()
-
-    def fun_run_for_read_write_throughput():
-        client_obj.run_for_read_write_throughput()
-
-    def fun_run_for_latency():
-        client_obj.run_for_latency(load=True)
-
-    p1 = multiprocessing.process(target = fun_run_for_read_write_throughput)
-    p2 = multiprocessing.process(target = fun_run_for_latency)
-    p1.start()
-    p2.start()
-    p1.join()
-    p2.join()
+    client_obj.run_for_load_latency()
     for ip in client_obj.server_ips:
         client_obj.ips_dict[ip]['transport'].close()
 
