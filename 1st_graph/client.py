@@ -10,6 +10,7 @@ import random
 import threading
 import sys
 import json
+import multiprocessing
 # your gen-py dir
 sys.path.append('gen-py')
 import time
@@ -181,9 +182,6 @@ def run_for_latency(client_obj, load = False):
             import pdb; pdb.set_trace()
 
 
-
-
-
 def run_for_read_write_throughput(client_obj):
     sizes = [500,5000]
     result_dict = {}
@@ -286,7 +284,11 @@ def main():
     #import pdb; pdb.set_trace()
     #client_obj.run_ops()
     run_for_read_write_throughput(client_obj)
-    #run_for_latency(client_obj)
+    run_for_latency(client_obj)
+    p1 = multiprocessing.process(target = run_for_table(client_obj))
+    p2 = multiprocessing.process(target = run_for_latency(client_obj, load=True))
+    p1.start
+    p2.start
     for ip in client_obj.server_ips:
         client_obj.ips_dict[ip]['transport'].close()
 
