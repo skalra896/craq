@@ -7,7 +7,7 @@
 #
 import argparse
 import random
-import multithreading
+import threading
 import sys
 # your gen-py dir
 sys.path.append('gen-py')
@@ -147,20 +147,7 @@ class Client:
             data = client.read(i)
             if data != -1: self.skew_read_count += 1
 
-def main():
-    parser = argparse.ArgumentParser(
-                    prog = 'CRAQ Client',
-                    description = 'Parses args through cli')
-    parser.add_argument('--write', type=int, default=10)
-    parser.add_argument('--read', type=int, default=10)
-    parser.add_argument('--skew_read', type=int, default=10)
-    args = parser.parse_args()
-    write_ops = args.write
-    read_ops = args.read
-    skew_read_ops = args.skew_read
-
-    client_obj = Client(write_ops, read_ops, skew_read_ops)
-    client_obj.connect_servers()
+def run_for_table(client_obj):
     sizes = [500,5000]
     result_dict = {}
     for size in sizes:
@@ -174,9 +161,9 @@ def main():
             threads_list = []
             i=0
             for _ in range(10):#10 thread of write, read, skew_read: total 9 threads
-                p_write = threading.Thread(target=client_obj.run_write_ops_for_time, kargs={i:i,size:size})
-                p_read=threading.Thread(target=client_obj.run_write_ops_for_time, kargs={i:i})
-                p_skew_read=threading.Thread(target=client_obj.run_write_ops_for_time, kargs={i:i})
+                p_write = threading.Thread(target=client_obj.run_write_ops_for_time, kwargs={'i':i,'size':size})
+                p_read=threading.Thread(target=client_obj.run_write_ops_for_time, kwargs={'i':i})
+                p_skew_read=threading.Thread(target=client_obj.run_write_ops_for_time, kwargs={'i':i})
                 #print ("count is",i)
                 threads_list.append(p_write)
                 threads_list.append(p_read)
@@ -184,7 +171,6 @@ def main():
                 i += 10000
             for each_thread in threads_list:
                 each_thread.start()
-            for each_thread in threads_list:
                 each_thread.join()
             write_list.append(client_obj.write_count)
             read_list.append(client_obj.read_count)
@@ -201,8 +187,27 @@ def main():
             client_obj.dirty_read = 0
             client_obj.skew_read_count = 0
             client_obj.skew_dirty_read = 0
-    import pdb; pdb.set_trace()
-    client_obj.run_ops()
+    with open('table_result.json', 'w') as fp:
+        json.dump(result_dict, fp)
+
+def main():
+    parser = argparse.ArgumentParser(
+                    prog = 'CRAQ Client',
+                    description = 'Parses args through cli')
+    parser.add_argument('--write', type=int, default=10)
+    parser.add_argument('--read', type=int, default=10)
+    parser.add_argument('--skew_read', type=int, default=10)
+    args = parser.parse_args()
+    write_ops = args.write
+    read_ops = args.read
+    skew_read_ops = args.skew_read
+
+    client_obj = Client(write_ops, read_ops, skew_read_ops)
+    client_obj.connect_servers()
+    
+    run_for_table(client_obj)
+    #import pdb; pdb.set_trace()
+    #client_obj.run_ops()
     for ip in client_obj.server_ips:
         client_obj.ips_dict[ip]['transport'].close()
 
