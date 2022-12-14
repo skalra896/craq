@@ -154,7 +154,7 @@ def run_for_latency(client_obj, load = False):
     latency_dict = {}
     for size in sizes:
         latency_dict[size] = {}
-        write_ip_dict = client_obj.ips_dict.get(self.server_ips[0])
+        write_ip_dict = client_obj.ips_dict.get(client_obj.server_ips[0])
         client = write_ip_dict['client']
         i = 1
         val = str(i)+'0'*(size-1)
@@ -162,7 +162,7 @@ def run_for_latency(client_obj, load = False):
         client.write(i, val)
         write_latency = time.time() - write_time
         latency_dict[size]['write_latenct'] = write_latency
-        read_ip_dict = client_obj.ips_dict.get(self.server_ips[1])
+        read_ip_dict = client_obj.ips_dict.get(client_obj.server_ips[1])
         client = read_ip_dict['client']
         read_start_time = time.time()
         client.read(i)
@@ -185,6 +185,8 @@ def run_for_latency(client_obj, load = False):
 def run_for_read_write_throughput(client_obj):
     sizes = [500,5000]
     result_dict = {}
+    client_obj.write_count = 0
+    client_obj.read_count = 0
     for size in sizes:
         result_dict[size] = {}
         write_list = []
@@ -208,8 +210,8 @@ def run_for_read_write_throughput(client_obj):
                 each_thread.start()
                 each_thread.join()
             read_list.append(client_obj.read_count)
-        client_obj.write_count = 0
-        client_obj.read_count = 0
+            client_obj.write_count = 0
+            client_obj.read_count = 0
         result_dict[size]['write_list'] = write_list
         result_dict[size]['read_list'] = read_list
     try:
