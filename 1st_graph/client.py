@@ -336,8 +336,8 @@ def main():
     def fun_run_for_latency():
         client_obj.run_for_latency(load=True)
 
-    p1 = multiprocessing.process(target = fun_run_for_read_write_throughput())
-    p2 = multiprocessing.process(target = fun_run_for_latency())
+    p1 = multiprocessing.process(target = fun_run_for_read_write_throughput)
+    p2 = multiprocessing.process(target = fun_run_for_latency)
     p1.start()
     p2.start()
     p1.join()
