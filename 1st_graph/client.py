@@ -77,6 +77,18 @@ class Client:
         self.skew_read()
         self.skew_read_time = time.time() - start_time
 
+    def run_write_cr_ops_for_time(self, i=0, size=500, time_sec=1):
+        start_time = time.time()
+        ip_dict = self.ips_dict.get(self.server_ips[0])
+        if ip_dict == None: return
+        while(time.time() - start_time <= time_sec):
+            digits = len(str(i))
+            val = str(i)+'0'*(size-digits)
+            client = ip_dict['client']
+            client.write_cr(i, val)
+            self.write_count += 1
+            i += 1
+
     def run_write_ops_for_time(self, i=0, size=500, time_sec=1):
         start_time = time.time()
         ip_dict = self.ips_dict.get(self.server_ips[0])
@@ -88,9 +100,6 @@ class Client:
             client.write(i, val)
             self.write_count += 1
             i += 1
-
-            #self.read()
-            #self.skew_read()
 
     def run_skew_read_ops_for_time(self, i=0, time_sec=1):
         self.total_skewed_ops = 0
@@ -106,12 +115,15 @@ class Client:
             self.skew_read_count += 1
             i += 1
 
-    def run_read_ops_for_time(self, i=0, time_sec=1):
+    def run_read_ops_for_time(self, i=0, cr=False, time_sec=1):
         self.total_read_ops = 0
         start_time = time.time()
         while(time.time() - start_time <= time_sec):
             self.total_read_ops += 1
-            idx = random.randint(0, 2)
+            if cr:
+                idx = -1
+            else:
+                idx = random.randint(0, 2)
             ip_dict = self.ips_dict.get(self.server_ips[idx])
             if ip_dict == None: return
             client = ip_dict['client']
@@ -182,7 +194,7 @@ class Client:
                 import pdb; pdb.set_trace()
 
 
-    def run_for_read_write_throughput(self):
+    def run_for_read_write_throughput(self, cr=False):
         sizes = [500,5000]
         result_dict = {}
         self.write_count = 0
@@ -194,18 +206,29 @@ class Client:
             for op in range(10):
                 threads_list = []
                 i=200000
-                for _ in range(10):#10 thread for write
-                    p_write = threading.Thread(target=self.run_write_ops_for_time, kwargs={'i':i,'size':size})
-                    threads_list.append(p_write)
-                    i += 10000
+                if cr:
+                    for _ in range(10):#10 thread for write
+                        p_write = threading.Thread(target=self.run_write_cr_ops_for_time, kwargs={'i':i,'size':size})
+                        threads_list.append(p_write)
+                        i += 10000
+                else:
+                    for _ in range(10):#10 thread for write
+                        p_write = threading.Thread(target=self.run_write_ops_for_time, kwargs={'i':i,'size':size})
+                        threads_list.append(p_write)
+                        i += 10000
                 for each_thread in threads_list:
                     each_thread.start()
                     each_thread.join()
                 write_list.append(self.write_count)
                 threads_list = []
-                for _ in range(30):#30 threads for read
-                    p_read=threading.Thread(target=self.run_read_ops_for_time, kwargs={'i':i})
-                    threads_list.append(p_read)
+                if cr:
+                    for _ in range(30):#30 threads for read
+                        p_read=threading.Thread(target=self.run_read_ops_for_time, kwargs={'i':i, 'cr':True})
+                        threads_list.append(p_read)
+                else:
+                    for _ in range(30):#30 threads for read
+                        p_read=threading.Thread(target=self.run_read_ops_for_time, kwargs={'i':i})
+                        threads_list.append(p_read)
                 for each_thread in threads_list:
                     each_thread.start()
                     each_thread.join()
@@ -220,7 +243,7 @@ class Client:
         except:
             import pdb; pdb.set_trace()
 
-    def run_for_table(self):
+    def run_for_table(self, cr=False):
         sizes = [500,5000]
         result_dict = {}
         for size in sizes:
@@ -234,16 +257,28 @@ class Client:
             i = 0
             for op in range(10):#no. of experiment
                 threads_list = []
-                for _ in range(10):#10 thread of write, 30 for read
-                    p_write = threading.Thread(target=self.run_write_ops_for_time, kwargs={'i':i,'size':size})
-                    threads_list.append(p_write)
-                    for read_i in range(3):
-                        p_read=threading.Thread(target=self.run_read_ops_for_time, kwargs={'i':i})
-                        threads_list.append(p_read)
-                    #p_skew_read=threading.Thread(target=self.run_read_ops_for_time, kwargs={'i':i})
-                    #print ("count is",i)
-                    #threads_list.append(p_skew_read)
-                    i += 10000
+                if cr:
+                    for _ in range(10):#10 thread of write, 30 for read
+                        p_write = threading.Thread(target=self.run_write_cr_ops_for_time, kwargs={'i':i,'size':size})
+                        threads_list.append(p_write)
+                        for read_i in range(3):
+                            p_read=threading.Thread(target=self.run_read_ops_for_time, kwargs={'i':i, 'cr':True})
+                            threads_list.append(p_read)
+                        #p_skew_read=threading.Thread(target=self.run_read_ops_for_time, kwargs={'i':i})
+                        #print ("count is",i)
+                        #threads_list.append(p_skew_read)
+                        i += 10000
+                else:
+                    for _ in range(10):#10 thread of write, 30 for read
+                        p_write = threading.Thread(target=self.run_write_ops_for_time, kwargs={'i':i,'size':size})
+                        threads_list.append(p_write)
+                        for read_i in range(3):
+                            p_read=threading.Thread(target=self.run_read_ops_for_time, kwargs={'i':i})
+                            threads_list.append(p_read)
+                        #p_skew_read=threading.Thread(target=self.run_read_ops_for_time, kwargs={'i':i})
+                        #print ("count is",i)
+                        #threads_list.append(p_skew_read)
+                        i += 10000
                 for each_thread in threads_list:
                     each_thread.start()
                     each_thread.join()
@@ -288,12 +323,14 @@ def main():
     client_obj.connect_servers()
     
     client_obj.run_for_table()
+    #client_obj.run_for_table(cr=True)
     #import pdb; pdb.set_trace()
     #client_obj.run_ops()
     client_obj.run_for_read_write_throughput()
+    #client_obj.run_for_read_write_throughput(cr=True)
     client_obj.run_for_latency()
-    p1 = multiprocessing.process(target = client_obj.run_for_read_write_throughput)
-    p2 = multiprocessing.process(target = client_obj.run_for_latency, kwargs={'load':True})
+    p1 = multiprocessing.process(target = client_obj.run_for_read_write_throughput())
+    p2 = multiprocessing.process(target = client_obj.run_for_latency(load=True))
     p1.start()
     p2.start()
     p1.join()
