@@ -316,7 +316,7 @@ class Client:
                 i=200000
                 if cr:
                     for _ in range(10):#10 thread for write
-                        p_write = threading.Thread(target=self.run_write_cr_ops_for_time, kwargs={'i':i,'size':size, 'cr':True})
+                        p_write = threading.Thread(target=self.run_write_cr_ops_for_time, kwargs={'i':i,'size':size})
                         threads_list.append(p_write)
                         i += 10000
                 else:
@@ -377,7 +377,7 @@ class Client:
                 threads_list = []
                 if cr:
                     for _ in range(10):#10 thread of write, 30 for read
-                        p_write = threading.Thread(target=self.run_write_cr_ops_for_time, kwargs={'i':i,'size':size, 'cr':True})
+                        p_write = threading.Thread(target=self.run_write_cr_ops_for_time, kwargs={'i':i,'size':size})
                         threads_list.append(p_write)
                         for read_i in range(3):
                             p_read=threading.Thread(target=self.run_read_ops_for_time, kwargs={'i':i, 'cr':True})
@@ -472,16 +472,16 @@ class Client:
     
     def run_craq(self):
         self.reset_data()
-        #self.run_for_table()
+        self.run_for_table()
         self.reset_data_cr()
-        #self.run_for_read_write_throughput()
+        self.run_for_read_write_throughput()
         self.reset_data_cr()
-        #self.run_for_latency()
+        self.run_for_latency()
         self.reset_data_cr()
-        #self.run_for_load_latency()
+        self.run_for_load_latency()
         self.reset_data_cr()
         self.write_vs_read_sec()
-        #self.run_fig_4()
+        self.run_fig_4()
 
     def run_cr(self):
         self.reset_data_cr()
@@ -505,12 +505,17 @@ def main():
     skew_read_ops = args.skew_read
     client_obj = Client(write_ops, read_ops, skew_read_ops)
     client_obj.connect_servers()
-    client_obj.run_craq()
-    
+    P1 = multiprocessing.Process(target=client_obj.run_craq)
+    P2 = multiprocessing.Process(target=client_obj.run_cr)
+    P1.start()
+    P2.start()
+    P1.join()
+    P2.join()
     for ip in client_obj.server_ips:
         client_obj.ips_dict[ip]['transport'].close()
 
-main()
+if __name__ == "__main__": 
+    main()
 
 
 '''todo
