@@ -25,7 +25,7 @@ from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
 
 class Client:
-    server_ips = ["10.10.1.3", "10.10.1.2", "10.10.1.5", "10.10.1.6", "10.10.1.7", "10.10.1.8", "10.10.1.9"]
+    server_ips = ["10.10.1.3", "10.10.1.2", "10.10.1.5"]
     handy = "155.98.39.100"
     port = 9090
 
@@ -43,6 +43,7 @@ class Client:
         self.skew_read_time = 0
         self.dirty_read=0
         self.skew_dirty_read=0
+        self.bck_read_count = 0
 
     def connect_servers(self):
         for i in range(len(self.server_ips)):
@@ -104,7 +105,7 @@ class Client:
     def run_skew_read_ops_for_time(self, i=0, time_sec=1):
         self.total_skewed_ops = 0
         start_time = time.time()
-        idx = random.randint(0, 2)
+        idx = random.randint(0, len(self.server_ips)-1)
         ip_dict = self.ips_dict.get(self.server_ips[idx])
         if ip_dict == None: return
         while(time.time() - start_time <= time_sec):
@@ -123,7 +124,7 @@ class Client:
             if cr:
                 idx = -1
             else:
-                idx = random.randint(0, 2)
+                idx = random.randint(0, len(self.server_ips)-1)
             ip_dict = self.ips_dict.get(self.server_ips[idx])
             if ip_dict == None: return
             client = ip_dict['client']
@@ -131,6 +132,60 @@ class Client:
             if val == '-1': self.dirty_read += 1
             self.read_count += 1
             i += 1
+    
+    def handled_writes_sec(self, client, delay_time, write_req, size):
+        current_time = time.time()
+        i = write_req
+        self.bck_read_count = 0
+        while(time.time()-current_time <= 1):
+            digits = len(str(i))
+            val = str(i)+'0'*(size-digits)
+            client.write(i, val)
+            i+=1
+            delay_start_time = time.time()
+            j = write_req
+            time.sleep(delay_time)
+            '''
+            while(time.time() - delay_start_time <= delay_time):
+                idx = random.randint(0, len(self.server_ips)-1)
+                ip_dict = self.ips_dict.get(self.server_ips[idx])
+                if ip_dict == None: continue
+                client_read = ip_dict['client']
+                client_read.read(j)
+                self.bck_read_count += 1
+                j += 1
+            '''
+
+    def write_vs_read_sec(self):
+        self.read_count = 0
+        self.write_count = 0
+        write_rates = [0, 50, 100, 150, 200, 250]
+        write_ip_dict = self.ips_dict.get(self.server_ips[0])
+        write_client = write_ip_dict['client']
+        result_dict = {}
+        for size in [500, 5000]:
+            result_dict[size] = {}
+            result_dict[size]['writes'] = write_rates
+            result_dict[size]['reads'] = []
+            for write_req in write_rates:
+                self.read_count = 0
+                threads = []
+                delay_time = 1/write_req if write_req else 1
+                write_thread = threading.Thread(target=self.handled_writes_sec, args=(write_client, delay_time, write_req, size))
+                threads.append(write_thread)
+                for _ in range(10):
+                    read_thread = threading.Thread(target=self.run_read_ops_for_time, kwargs={'i':write_req})
+                    threads.append(read_thread)
+                for each_thread in threads:
+                    each_thread.start()
+                    each_thread.join()
+                result_dict[size]['reads'].append(self.read_count+self.bck_read_count)
+        try:
+            with open('write_vs_read_per_sec.json', 'w') as fp:
+                    json.dump(result_dict, fp)
+        except:
+            print('Read vs write per second not recorded')
+
 
     def write(self):
         ip_dict = self.ips_dict.get(self.server_ips[0])
@@ -144,7 +199,7 @@ class Client:
 
     def read(self):
         for i in range(self.read_ops):
-            idx = random.randint(0, 2)
+            idx = random.randint(0, len(self.server_ips)-1)
             ip_dict = self.ips_dict.get(self.server_ips[idx])
             if ip_dict == None: continue
             client = ip_dict['client']
@@ -153,7 +208,7 @@ class Client:
         return 0
 
     def skew_read(self):
-        idx = random.randint(0, 2)
+        idx = random.randint(0, len(self.server_ips)-1)
         ip_dict = self.ips_dict.get(self.server_ips[idx])
         if ip_dict == None: return
         client = ip_dict['client']
@@ -330,14 +385,15 @@ def main():
     client_obj = Client(write_ops, read_ops, skew_read_ops)
     client_obj.connect_servers()
     
-    client_obj.run_for_table()
+    #client_obj.run_for_table()
     #client_obj.run_for_table(cr=True)
     #import pdb; pdb.set_trace()
     #client_obj.run_ops()
-    client_obj.run_for_read_write_throughput()
+    #client_obj.run_for_read_write_throughput()
     #client_obj.run_for_read_write_throughput(cr=True)
-    client_obj.run_for_latency()
-    client_obj.run_for_load_latency()
+    #client_obj.run_for_latency()
+    #client_obj.run_for_load_latency()
+    client_obj.write_vs_read_sec()
     for ip in client_obj.server_ips:
         client_obj.ips_dict[ip]['transport'].close()
 
