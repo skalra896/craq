@@ -1,0 +1,45 @@
+
+500 - w - 3.2 r - .5(clean)
+5k - w - 3.0, r = .6 
+
+Expectation; 
+no load 
+            w        r
+    500    2.05     .49
+    5k      4.78    .99
+
+load
+             w            r
+    500      5.75        1.49
+    5k       11.61       1.99
+
+
+
+throughput
+        r       w
+CR       19k    
+CRAQ    58,998  5,480
+
+throughput cr vs  craq VS # of clients   Figure 4
+CR  - 19k
+CRAQ - 60k
+
+
+
+
+write + read (500 byte)         Figure 6
+        w               r
+CR     0  - 250         20k
+CRAQ   0  - 250         60k - 40k
+
+write + read (5k byte)          Figure 7
+        w                r
+CR      0 - 100         20k
+CRAQ    0 - 100         60k-50k
+
+write + read (CRAQ) Figure 8
+            w               r
+total       0  -  250       60k-50k
+dirty       0  -  250       0-30k
+clean       0  -  250       60k-20k
+
