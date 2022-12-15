@@ -27,6 +27,7 @@ class ServiceHandler:
         self.next = None
         self.prev = None
         self.tail = None
+        self.set_lock = False
 
     
     def set_node_connections(self, index):
@@ -73,22 +74,24 @@ class ServiceHandler:
 
     def write(self, key, val):
         #print('making next connection set node connections, index: %s '% (self.index))
-        
+        self.set_lock = True
         self.map[key] = {"msg" : val, "dirtybit" : 1} #data is dirty
 
         if self.next != None:                             # have next node
             self.writeSuccessor(key, val)
 
         else:                                              # tail node
-            self.ack(key)                             # commit + ack back        
+            self.ack(key)                             # commit + ack back  
+        self.set_lock = False      
     
     def write_cr(self, key, val):
         #print('making next connection set node connections, index: %s '% (self.index))
-        
+        self.set_lock = True
         self.map[key] = {"msg" : val, "dirtybit" : 0} #data is dirty
 
         if self.next != None:                             # have next node
-            self.writeSuccessor(key, val)
+            self.writeSuccessor_cr(key, val)
+        self.set_lock = False
      
     def ack(self, key):
         self.map[key]["dirtybit"] = 0
@@ -102,21 +105,27 @@ class ServiceHandler:
                 #print('Ack couldnt pass message: %s' % (tx.message))
 
     def read(self, key):
+        while(self.set_lock):
+            continue
         #print('making read at index: %s '% (self.index))
-        if self.map.get(key) == None: 
-            return '-1'                     #key is not present
+        self.set_lock = True
+        if self.map.get(key) == None: #key is not present
+            self.set_lock = False
+            return '-1'                     
         
         #print('Dirty bit val: %s'%(self.map[key]["dirtybit"]))
 
         if(self.map[key]["dirtybit"] == 0):   #data is commited at current node
+            self.set_lock = False
             return self.map[key]["msg"]
         
         if self.tail != None: 
             bitAtTail = self.readTail(key)       #check dirty bit at tail
             
             if bitAtTail == 0:                      # data is commited at tail
+                self.set_lock = False
                 return self.map[key]["msg"]        # return data
-            
+        self.set_lock = False
         return '-1'    
 
     def readTail(self, key):
@@ -137,8 +146,15 @@ class ServiceHandler:
             self.next.write(key, value)
 
         except Thrift.TException as tx:
-            pass
-            #print('writeSuccessor could not pass message: %s' % (tx.message))
+            print('writeSuccessor could not pass message: %s' % (tx.message))
+    
+    def writeSuccessor_cr(self, key, value):
+        try:
+            self.next.write_cr(key, value)
+
+        except Thrift.TException as tx:
+            print('writeSuccessor CR could not pass message: %s' % (tx.message))
+    
     
         
 # set handler to our implementation

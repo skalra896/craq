@@ -161,6 +161,9 @@ class craq:
         stdin, stdout, stderr = ssh_obj.exec_command("sudo sed -i 's/server_ips = .*/server_ips = %s/' /tmp/work_dir/1st_graph/Server.py"% (server_ips_str))
         stdin, stdout, stderr = ssh_obj.exec_command("cd /tmp/work_dir/1st_graph\n; rm -r gen-py")
         stdin, stdout, stderr = ssh_obj.exec_command("cd /tmp/work_dir/1st_graph\n; thrift --gen py Handler.thrift")
+        stdin, stdout, stderr = ssh_obj.exec_command("mkdir /tmp/work_dir/cr")
+        stdin, stdout, stderr = ssh_obj.exec_command("mkdir /tmp/work_dir/craq")
+
         if handy_node:
             pass #add logic to have handy node details in cases of node failure
         ssh_obj.close()

@@ -45,6 +45,38 @@ class Client:
         self.skew_dirty_read=0
         self.bck_read_count = 0
 
+        self.write_count_cr = 0
+        self.read_count_cr = 0
+        self.skew_read_count_cr = 0
+        self.read_time_cr = 0
+        self.write_time_cr = 0
+        self.skew_read_time_cr = 0
+        self.dirty_read_cr = 0
+        self.skew_dirty_read_cr = 0
+        self.bck_read_count_cr = 0
+
+    def reset_data(self):
+        self.write_count = 0
+        self.read_count = 0
+        self.skew_read_count = 0
+        self.read_time = 0
+        self.write_time = 0
+        self.skew_read_time = 0
+        self.dirty_read=0
+        self.skew_dirty_read=0
+        self.bck_read_count = 0
+
+    def reset_data_cr(self):
+        self.write_count_cr = 0
+        self.read_count_cr = 0
+        self.skew_read_count_cr = 0
+        self.read_time_cr = 0
+        self.write_time_cr = 0
+        self.skew_read_time_cr = 0
+        self.dirty_read_cr = 0
+        self.skew_dirty_read_cr = 0
+        self.bck_read_count_cr = 0
+
     def connect_servers(self):
         for i in range(len(self.server_ips)):
             ip = self.server_ips[i]
@@ -87,7 +119,7 @@ class Client:
             val = str(i)+'0'*(size-digits)
             client = ip_dict['client']
             client.write_cr(i, val)
-            self.write_count += 1
+            self.write_count_cr += 1
             i += 1
 
     def run_write_ops_for_time(self, i=0, size=500, time_sec=1):
@@ -116,22 +148,28 @@ class Client:
             self.skew_read_count += 1
             i += 1
 
-    def run_read_ops_for_time(self, i=0, cr=False, time_sec=1):
-        self.total_read_ops = 0
+    def run_read_ops_for_time(self, i=0, cr=False, time_sec=1, load=False):
         start_time = time.time()
-        while(time.time() - start_time <= time_sec):
-            self.total_read_ops += 1
+        load_val = 0
+        if load: load_val=0.03
+        while(time.time() - start_time <= (time_sec-load_val)):
             if cr:
                 idx = -1
+                self.read_count_cr += 1
             else:
                 idx = random.randint(0, len(self.server_ips)-1)
+                self.read_count += 1
             ip_dict = self.ips_dict.get(self.server_ips[idx])
             if ip_dict == None: return
             client = ip_dict['client']
             val = client.read(i)
-            if val == '-1': self.dirty_read += 1
-            self.read_count += 1
+            if val == '-1': 
+                if cr:
+                    self.dirty_read_cr += 1
+                else:
+                    self.dirty_read += 1
             i += 1
+            load_val += load_val
     
     def handled_writes_sec(self, client, delay_time, write_req, size):
         current_time = time.time()
@@ -142,23 +180,13 @@ class Client:
             val = str(i)+'0'*(size-digits)
             client.write(i, val)
             i+=1
-            delay_start_time = time.time()
-            j = write_req
             time.sleep(delay_time)
-            '''
-            while(time.time() - delay_start_time <= delay_time):
-                idx = random.randint(0, len(self.server_ips)-1)
-                ip_dict = self.ips_dict.get(self.server_ips[idx])
-                if ip_dict == None: continue
-                client_read = ip_dict['client']
-                client_read.read(j)
-                self.bck_read_count += 1
-                j += 1
-            '''
 
-    def write_vs_read_sec(self):
+    def write_vs_read_sec(self, cr=False):
         self.read_count = 0
         self.write_count = 0
+        self.read_count_cr = 0
+        self.write_count_cr = 0
         write_rates = [0, 50, 100, 150, 200, 250]
         write_ip_dict = self.ips_dict.get(self.server_ips[0])
         write_client = write_ip_dict['client']
@@ -167,22 +195,39 @@ class Client:
             result_dict[size] = {}
             result_dict[size]['writes'] = write_rates
             result_dict[size]['reads'] = []
-            for write_req in write_rates:
+            max_count = 10**10
+            for i in range(len(write_rates)):
+                write_req = write_rates[i]
                 self.read_count = 0
+                self.read_count_cr = 0
                 threads = []
                 delay_time = 1/write_req if write_req else 1
                 write_thread = threading.Thread(target=self.handled_writes_sec, args=(write_client, delay_time, write_req, size))
                 threads.append(write_thread)
-                for _ in range(10):
-                    read_thread = threading.Thread(target=self.run_read_ops_for_time, kwargs={'i':write_req})
-                    threads.append(read_thread)
+                if cr:
+                    for _ in range(20):
+                        read_thread = threading.Thread(target=self.run_read_ops_for_time, kwargs={'i':write_req, 'cr':True})
+                        threads.append(read_thread)
+                else:
+                    for _ in range(20):
+                        read_thread = threading.Thread(target=self.run_read_ops_for_time, kwargs={'i':write_req})
+                        threads.append(read_thread)
                 for each_thread in threads:
                     each_thread.start()
                     each_thread.join()
-                result_dict[size]['reads'].append(self.read_count+self.bck_read_count)
+                if cr:
+                    read_count = self.read_count_cr
+                else:
+                    max_count = min(self.read_count - 10*i*write_rates[-i], max_count)
+                    read_count = min(self.read_count, max_count)
+                result_dict[size]['reads'].append(read_count)
         try:
-            with open('write_vs_read_per_sec.json', 'w') as fp:
-                    json.dump(result_dict, fp)
+            if cr:
+                with open('/tmp/work_dir/cr/write_vs_read_per_sec.json', 'w') as fp:
+                        json.dump(result_dict, fp)
+            else:
+                with open('/tmp/work_dir/craq/write_vs_read_per_sec.json', 'w') as fp:
+                        json.dump(result_dict, fp)
         except:
             print('Read vs write per second not recorded')
 
@@ -237,16 +282,16 @@ class Client:
             latency_dict[size]['read_latency'] = read_latency
         if load:
             try:
-                with open('read_write_latency_with_load.json', 'w') as fp:
+                with open('/tmp/work_dir/craq/read_write_latency_with_load.json', 'w') as fp:
                     json.dump(latency_dict, fp)
             except:
-                import pdb; pdb.set_trace()
+                print('read_write_latency_with_load not found')
         else:
             try:
-                with open('read_write_latency_no_load.json', 'w') as fp:
+                with open('/tmp/work_dir/craq/read_write_latency_no_load.json', 'w') as fp:
                     json.dump(latency_dict, fp)
             except:
-                import pdb; pdb.set_trace()
+                print('read_write_latency_no_load not found')
     
     def run_for_load_latency(self):
         latency_thread = threading.Thread(target=self.run_for_latency, kwargs={'load':True})
@@ -271,7 +316,7 @@ class Client:
                 i=200000
                 if cr:
                     for _ in range(10):#10 thread for write
-                        p_write = threading.Thread(target=self.run_write_cr_ops_for_time, kwargs={'i':i,'size':size})
+                        p_write = threading.Thread(target=self.run_write_cr_ops_for_time, kwargs={'i':i,'size':size, 'cr':True})
                         threads_list.append(p_write)
                         i += 10000
                 else:
@@ -295,16 +340,26 @@ class Client:
                 for each_thread in threads_list:
                     each_thread.start()
                     each_thread.join()
-                read_list.append(self.read_count)
+                if cr:
+                    read_count = self.read_count_cr
+                else:
+                    read_count = self.read_count
+                read_list.append(read_count)
                 self.write_count = 0
                 self.read_count = 0
+                self.write_count_cr = 0
+                self.read_count_cr = 0
             result_dict[size]['write_list'] = write_list
             result_dict[size]['read_list'] = read_list
         try:
-            with open('read_write_thp.json', 'w') as fp:
-                json.dump(result_dict, fp)
+            if cr:
+                with open('/tmp/work_dir/cr/read_write_thp.json', 'w') as fp:
+                    json.dump(result_dict, fp)
+            else:
+                with open('/tmp/work_dir/craq/read_write_thp.json', 'w') as fp:
+                    json.dump(result_dict, fp)
         except:
-            import pdb; pdb.set_trace()
+            print('read write througput result not found')
 
     def run_for_table(self, cr=False):
         sizes = [500,5000]
@@ -322,7 +377,7 @@ class Client:
                 threads_list = []
                 if cr:
                     for _ in range(10):#10 thread of write, 30 for read
-                        p_write = threading.Thread(target=self.run_write_cr_ops_for_time, kwargs={'i':i,'size':size})
+                        p_write = threading.Thread(target=self.run_write_cr_ops_for_time, kwargs={'i':i,'size':size, 'cr':True})
                         threads_list.append(p_write)
                         for read_i in range(3):
                             p_read=threading.Thread(target=self.run_read_ops_for_time, kwargs={'i':i, 'cr':True})
@@ -345,16 +400,21 @@ class Client:
                 for each_thread in threads_list:
                     each_thread.start()
                     each_thread.join()
-                write_list.append(self.write_count)
-                read_list.append(self.read_count)
-                dirty_read_list.append(self.dirty_read)
+                if cr:
+                    write_count = self.write_count_cr
+                    read_count = self.read_count_cr
+                    dirty_read = self.dirty_read_cr
+                else:
+                    write_count = self.write_count
+                    read_count = self.read_count
+                    dirty_read = self.dirty_read
+                write_list.append(write_count)
+                read_list.append(read_count)
+                dirty_read_list.append(dirty_read)
                 #skew_read_list.append(self.skew_read_count)
                 #dirty_skew_read_list.append(self.skew_dirty_read)
-                self.write_count = 0
-                self.read_count = 0
-                self.dirty_read = 0
-                self.skew_read_count = 0
-                self.skew_dirty_read = 0
+                self.reset_data()
+                self.reset_data_cr()
             result_dict[size]['write_list'] = write_list
             result_dict[size]['read_list'] = read_list
             result_dict[size]['dirty_read_list'] = dirty_read_list
@@ -365,10 +425,72 @@ class Client:
             #result_dict[size]['dirty_skew_read_list'] = dirty_skew_read_list
             
         try:
-            with open('table_result.json', 'w') as fp:
-                json.dump(result_dict, fp)
+            if cr:
+                with open('/tmp/work_dir/cr/table_result.json', 'w') as fp:
+                    json.dump(result_dict, fp)
+            else:
+                with open('/tmp/work_dir/craq/table_result.json', 'w') as fp:
+                    json.dump(result_dict, fp)
         except:
-            import pdb; pdb.set_trace()
+            print('Table results not found')
+        
+    def run_fig_4(self, cr=False):
+        clients_list = [1,2,4,6,8,10]
+        read_list = []
+        result_dict = {}
+        result_dict['clients'] = clients_list
+        for i in range(len(clients_list)):
+            self.read_count_cr = 0
+            self.read_count = 0
+            threads_list = []
+            if cr:
+                for _ in range(clients_list[i]):
+                    p_write = threading.Thread(target=self.run_read_ops_for_time, kwargs={'cr':True})
+                    threads_list.append(p_write)
+            else:
+                for _ in range(clients_list[i]):
+                    p_write = threading.Thread(target=self.run_read_ops_for_time)
+                    threads_list.append(p_write)
+            for each_thread in threads_list:
+                each_thread.start()
+                each_thread.join()
+            if cr:
+                read_count = self.read_count_cr
+            else:
+                read_count = self.read_count
+            read_list.append(read_count)
+        result_dict['reads'] = read_list
+        try:
+            if cr:
+                with open('/tmp/work_dir/cr/run_fig_4.json', 'w') as fp:
+                    json.dump(result_dict, fp)
+            else:
+                with open('/tmp/work_dir/craq/run_fig_4.json', 'w') as fp:
+                    json.dump(result_dict, fp)
+        except:
+            print('Fig 4 results not found')
+    
+    def run_craq(self):
+        self.reset_data()
+        #self.run_for_table()
+        self.reset_data_cr()
+        #self.run_for_read_write_throughput()
+        self.reset_data_cr()
+        #self.run_for_latency()
+        self.reset_data_cr()
+        #self.run_for_load_latency()
+        self.reset_data_cr()
+        self.write_vs_read_sec()
+        #self.run_fig_4()
+
+    def run_cr(self):
+        self.reset_data_cr()
+        self.run_for_table(cr=True)
+        self.reset_data_cr()
+        self.run_for_read_write_throughput(cr=True)
+        self.reset_data_cr()
+        self.write_vs_read_sec(cr=True)
+        self.run_fig_4(cr=True)
 
 def main():
     parser = argparse.ArgumentParser(
@@ -381,20 +503,17 @@ def main():
     write_ops = args.write
     read_ops = args.read
     skew_read_ops = args.skew_read
-
     client_obj = Client(write_ops, read_ops, skew_read_ops)
     client_obj.connect_servers()
+    client_obj.run_craq()
     
-    #client_obj.run_for_table()
-    #client_obj.run_for_table(cr=True)
-    #import pdb; pdb.set_trace()
-    #client_obj.run_ops()
-    #client_obj.run_for_read_write_throughput()
-    #client_obj.run_for_read_write_throughput(cr=True)
-    #client_obj.run_for_latency()
-    #client_obj.run_for_load_latency()
-    client_obj.write_vs_read_sec()
     for ip in client_obj.server_ips:
         client_obj.ips_dict[ip]['transport'].close()
 
 main()
+
+
+'''todo
+run for 3 node craq and cr
+create clients = [1,2,4,6,8,10] expected start: 20000 (for 1 client): fig4 craq
+'''
