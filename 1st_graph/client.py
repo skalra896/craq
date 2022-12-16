@@ -395,7 +395,7 @@ class Client:
             for op in range(10):#no. of experiment
                 threads_list = []
                 if cr:
-                    for _ in range(10):#10 thread of write, 30 for read
+                    for _ in range(10):#10 thread of write, 25 for read
                         p_write = threading.Thread(target=self.run_write_cr_ops_for_time, kwargs={'i':i,'size':size})
                         threads_list.append(p_write)
                         p_read=threading.Thread(target=self.run_read_ops_for_time, kwargs={'i':i, 'cr':True})
@@ -405,7 +405,7 @@ class Client:
                         #threads_list.append(p_skew_read)
                         i += 10000
                 else:
-                    for _ in range(10):#10 thread of write, 30 for read
+                    for _ in range(10):#10 thread of write, 25 for read
                         p_write = threading.Thread(target=self.run_write_ops_for_time, kwargs={'i':i,'size':size})
                         threads_list.append(p_write)
                         i += 10000
