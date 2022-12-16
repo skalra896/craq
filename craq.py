@@ -91,7 +91,7 @@ class craq:
         response = stdout.readlines()
         for each_res in response:
             proc = each_res.strip().split()[1]
-            stdin, stdout, stderr = ssh_obj.exec_command("kill -9 %s"%(proc))
+            stdin, stdout, stderr = ssh_obj.exec_command("sudo kill -9 %s"%(proc))
         ssh_obj.close()
 
     def stop_servers(self):
@@ -159,6 +159,7 @@ class craq:
         if len(self.ip_list) == 7:
             server_ips_str = "[\"10.10.1.3\", \"10.10.1.2\", \"10.10.1.5\", \"10.10.1.6\", \"10.10.1.7\", \"10.10.1.8\", \"10.10.1.9\"]"
         stdin, stdout, stderr = ssh_obj.exec_command("sudo sed -i 's/server_ips = .*/server_ips = %s/' /tmp/work_dir/1st_graph/Server.py"% (server_ips_str))
+        stdin, stdout, stderr = ssh_obj.exec_command("sudo sed -i 's/server_ips = .*/server_ips = %s/' /tmp/work_dir/1st_graph/client.py"% (server_ips_str))
         stdin, stdout, stderr = ssh_obj.exec_command("cd /tmp/work_dir/1st_graph\n; rm -r gen-py")
         stdin, stdout, stderr = ssh_obj.exec_command("cd /tmp/work_dir/1st_graph\n; thrift --gen py Handler.thrift")
         stdin, stdout, stderr = ssh_obj.exec_command("mkdir /tmp/work_dir/cr")
@@ -181,11 +182,18 @@ class craq:
         self.set_tailnode()
         self.run_servers()
         
-    def run_client(write_ops, read_ops, skew_read_ops):
-        self.client_node.ssh_obj.connect(node.user+self.hostname, username=self.usern, key_filename='craq')
-        stdin, stdout, stderr = ssh_obj.exec_command("python3 client.py --write %s --read %s --skew_read %s"
-                                %(write_ops, read_ops, skew_read_ops))
-        self.client_node.ssh_obj.close()
+    def run_client(self, write_ops, read_ops, skew_read_ops, cr=False):
+        node =  self.client_node
+        ssh_obj = node.ssh_obj
+        ssh_obj.connect(node.user+self.hostname, username=self.usern, key_filename='craq')
+        if cr:
+            stdin, stdout, stderr = ssh_obj.exec_command("python3 client.py --write %s --read %s --skew_read %s --cr"
+                                    %(write_ops, read_ops, skew_read_ops))
+        else:
+            stdin, stdout, stderr = ssh_obj.exec_command("python3 client.py --write %s --read %s --skew_read %s"
+                                    %(write_ops, read_ops, skew_read_ops))
+        print(stdout.readlines())
+        ssh_obj.close()
 
 
 def main():
@@ -200,16 +208,30 @@ def main():
     parser.add_argument('--skew_read_ops', type=int, default=200)
     args = parser.parse_args()
     craq_obj = craq(args.ips, args.users)
-    import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace()
     if args.setup:
         craq_obj.setup_nodes()
         return
     craq_obj.stop_servers()
     craq_obj.add_client_server_files()
+    time.sleep(3)
+    print('added client server files to nodes')
     craq_obj.update_ips_client()
+    time.sleep(1)
     craq_obj.update_ips_server()
+    time.sleep(1)
+    print('updated client server files to nodes')
     craq_obj.run_servers()
+    time.sleep(2)
+    import pdb; pdb.set_trace()
+    print('Running Craq')
     craq_obj.run_client(args.write_ops, args.read_ops, args.skew_read_ops)
+    craq_obj.stop_servers()
+    time.sleep(2)
+    craq_obj.run_servers()
+    time.sleep(2)
+    print('Running Cr')
+    craq_obj.run_client(args.write_ops, args.read_ops, args.skew_read_ops, cr=True)
 
 main()
 

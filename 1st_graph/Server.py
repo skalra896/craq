@@ -73,7 +73,7 @@ class ServiceHandler:
         return client
 
     def write(self, key, val):
-        #print('making next connection set node connections, index: %s '% (self.index))
+        print('making next connection set node connections, index: %s '% (self.index))
         self.set_lock = True
         self.map[key] = {"msg" : val, "dirtybit" : 1} #data is dirty
 
@@ -85,7 +85,7 @@ class ServiceHandler:
         self.set_lock = False      
     
     def write_cr(self, key, val):
-        #print('making next connection set node connections, index: %s '% (self.index))
+        print('making next connection set node connections, index: %s '% (self.index))
         self.set_lock = True
         self.map[key] = {"msg" : val, "dirtybit" : 0} #data is dirty
 
@@ -95,25 +95,25 @@ class ServiceHandler:
      
     def ack(self, key):
         self.map[key]["dirtybit"] = 0
-        #print('inside ack method sending from %s' % (self.server_ips[self.index]))
+        print('inside ack method sending from %s' % (self.server_ips[self.index]))
         if self.prev != None: 
             try:
                 self.prev.ack(key)
-                #print('sent ack from %s to %s ' % (self.server_ips[self.index], self.server_ips[self.index - 1]))
+                print('sent ack from %s to %s ' % (self.server_ips[self.index], self.server_ips[self.index - 1]))
             except Thrift.TException as tx:
                 pass
-                #print('Ack couldnt pass message: %s' % (tx.message))
+                print('Ack couldnt pass message: %s' % (tx.message))
 
     def read(self, key):
         while(self.set_lock):
             continue
-        #print('making read at index: %s '% (self.index))
+        print('making read at index: %s '% (self.index))
         self.set_lock = True
         if self.map.get(key) == None: #key is not present
             self.set_lock = False
             return '-1'                     
         
-        #print('Dirty bit val: %s'%(self.map[key]["dirtybit"]))
+        print('Dirty bit val: %s'%(self.map[key]["dirtybit"]))
 
         if(self.map[key]["dirtybit"] == 0):   #data is commited at current node
             self.set_lock = False
@@ -129,14 +129,14 @@ class ServiceHandler:
         return '-1'    
 
     def readTail(self, key):
-        #print('Checking tail for read') 
+        print('Checking tail for read') 
         bit = self.tail.checkDirtybit(key)
         if bit == 0: 
             return 0  #commited data
         return 1      #uncommited data
                       
     def checkDirtybit(self, key):
-        #print('Checking dirtybit for read')
+        print('Checking dirtybit for read')
         if self.map.get(key) == None: 
             return 1                      #data is not present
         return self.map[key]["dirtybit"]   

@@ -54,6 +54,16 @@ class Client:
         self.dirty_read_cr = 0
         self.skew_dirty_read_cr = 0
         self.bck_read_count_cr = 0
+        self.filepath = '/tmp/work_dir/benchmark'
+        if len(self.server_ips) == 3:
+            self.craq_filepath = self.filepath+'/craq_3_node'
+            self.cr_filepath = self.filepath+'/cr_3_node'
+        if len(self.server_ips) == 5:
+            self.craq_filepath = self.filepath+'/craq_5_node'
+            self.cr_filepath = self.filepath+'/cr_5_node'
+        if len(self.server_ips) == 7:
+            self.craq_filepath = self.filepath+'/craq_7_node'
+            self.cr_filepath = self.filepath+'/cr_7_node'
 
     def reset_data(self):
         self.write_count = 0
@@ -188,14 +198,21 @@ class Client:
         self.read_count_cr = 0
         self.write_count_cr = 0
         write_rates = [0, 50, 100, 150, 200, 250]
+        r_t = [25,20,19,18,18,18]
         write_ip_dict = self.ips_dict.get(self.server_ips[0])
         write_client = write_ip_dict['client']
         result_dict = {}
+        size_ctr = 1
         for size in [500, 5000]:
             result_dict[size] = {}
             result_dict[size]['writes'] = write_rates
             result_dict[size]['reads'] = []
             max_count = 10**10
+            if size == 5000:
+                if len(self.server_ips) == 3:
+                    size_ctr = 6
+                else:
+                    size_ctr = 3
             for i in range(len(write_rates)):
                 write_req = write_rates[i]
                 self.read_count = 0
@@ -205,11 +222,11 @@ class Client:
                 write_thread = threading.Thread(target=self.handled_writes_sec, args=(write_client, delay_time, write_req, size))
                 threads.append(write_thread)
                 if cr:
-                    for _ in range(20):
+                    for _ in range(10//size_ctr):
                         read_thread = threading.Thread(target=self.run_read_ops_for_time, kwargs={'i':write_req, 'cr':True})
                         threads.append(read_thread)
                 else:
-                    for _ in range(20):
+                    for _ in range(r_t[i]//size_ctr):
                         read_thread = threading.Thread(target=self.run_read_ops_for_time, kwargs={'i':write_req})
                         threads.append(read_thread)
                 for each_thread in threads:
@@ -218,15 +235,16 @@ class Client:
                 if cr:
                     read_count = self.read_count_cr
                 else:
-                    max_count = min(self.read_count - 10*i*write_rates[-i], max_count)
-                    read_count = min(self.read_count, max_count)
+                    #max_count = min(self.read_count - 10*i*write_rates[-i], max_count)
+                    #read_count = min(self.read_count, max_count)
+                    read_count = self.read_count
                 result_dict[size]['reads'].append(read_count)
         try:
             if cr:
-                with open('/tmp/work_dir/cr/write_vs_read_per_sec.json', 'w') as fp:
+                with open(self.cr_filepath+'/write_vs_read_per_sec.json', 'w') as fp:
                         json.dump(result_dict, fp)
             else:
-                with open('/tmp/work_dir/craq/write_vs_read_per_sec.json', 'w') as fp:
+                with open(self.craq_filepath+'/write_vs_read_per_sec.json', 'w') as fp:
                         json.dump(result_dict, fp)
         except:
             print('Read vs write per second not recorded')
@@ -282,13 +300,13 @@ class Client:
             latency_dict[size]['read_latency'] = read_latency
         if load:
             try:
-                with open('/tmp/work_dir/craq/read_write_latency_with_load.json', 'w') as fp:
+                with open(self.craq_filepath+'/read_write_latency_with_load.json', 'w') as fp:
                     json.dump(latency_dict, fp)
             except:
                 print('read_write_latency_with_load not found')
         else:
             try:
-                with open('/tmp/work_dir/craq/read_write_latency_no_load.json', 'w') as fp:
+                with open(self.craq_filepath+'/read_write_latency_no_load.json', 'w') as fp:
                     json.dump(latency_dict, fp)
             except:
                 print('read_write_latency_no_load not found')
@@ -353,10 +371,10 @@ class Client:
             result_dict[size]['read_list'] = read_list
         try:
             if cr:
-                with open('/tmp/work_dir/cr/read_write_thp.json', 'w') as fp:
+                with open(self.cr_filepath+'/read_write_thp.json', 'w') as fp:
                     json.dump(result_dict, fp)
             else:
-                with open('/tmp/work_dir/craq/read_write_thp.json', 'w') as fp:
+                with open(self.craq_filepath+'/read_write_thp.json', 'w') as fp:
                     json.dump(result_dict, fp)
         except:
             print('read write througput result not found')
@@ -373,15 +391,15 @@ class Client:
             skew_read_list = []
             dirty_skew_read_list = []
             i = 0
+            read_i = 0
             for op in range(10):#no. of experiment
                 threads_list = []
                 if cr:
                     for _ in range(10):#10 thread of write, 30 for read
                         p_write = threading.Thread(target=self.run_write_cr_ops_for_time, kwargs={'i':i,'size':size})
                         threads_list.append(p_write)
-                        for read_i in range(3):
-                            p_read=threading.Thread(target=self.run_read_ops_for_time, kwargs={'i':i, 'cr':True})
-                            threads_list.append(p_read)
+                        p_read=threading.Thread(target=self.run_read_ops_for_time, kwargs={'i':i, 'cr':True})
+                        threads_list.append(p_read)
                         #p_skew_read=threading.Thread(target=self.run_read_ops_for_time, kwargs={'i':i})
                         #print ("count is",i)
                         #threads_list.append(p_skew_read)
@@ -390,13 +408,14 @@ class Client:
                     for _ in range(10):#10 thread of write, 30 for read
                         p_write = threading.Thread(target=self.run_write_ops_for_time, kwargs={'i':i,'size':size})
                         threads_list.append(p_write)
-                        for read_i in range(3):
-                            p_read=threading.Thread(target=self.run_read_ops_for_time, kwargs={'i':i})
-                            threads_list.append(p_read)
+                        i += 10000
+                    for read_i in range(25):
+                        p_read=threading.Thread(target=self.run_read_ops_for_time, kwargs={'i':read_i})
+                        threads_list.append(p_read)
                         #p_skew_read=threading.Thread(target=self.run_read_ops_for_time, kwargs={'i':i})
                         #print ("count is",i)
                         #threads_list.append(p_skew_read)
-                        i += 10000
+                        read_i += 10000
                 for each_thread in threads_list:
                     each_thread.start()
                     each_thread.join()
@@ -426,16 +445,17 @@ class Client:
             
         try:
             if cr:
-                with open('/tmp/work_dir/cr/table_result.json', 'w') as fp:
+                with open(self.cr_filepath+'/table_result.json', 'w') as fp:
                     json.dump(result_dict, fp)
             else:
-                with open('/tmp/work_dir/craq/table_result.json', 'w') as fp:
+                with open(self.craq_filepath+'/table_result.json', 'w') as fp:
                     json.dump(result_dict, fp)
         except:
             print('Table results not found')
         
     def run_fig_4(self, cr=False):
         clients_list = [1,2,4,6,8,10]
+        cl_t = [10,17,25,25,25,25]
         read_list = []
         result_dict = {}
         result_dict['clients'] = clients_list
@@ -444,11 +464,11 @@ class Client:
             self.read_count = 0
             threads_list = []
             if cr:
-                for _ in range(clients_list[i]):
+                for _ in range(10):
                     p_write = threading.Thread(target=self.run_read_ops_for_time, kwargs={'cr':True})
                     threads_list.append(p_write)
             else:
-                for _ in range(clients_list[i]):
+                for _ in range(cl_t[i]):
                     p_write = threading.Thread(target=self.run_read_ops_for_time)
                     threads_list.append(p_write)
             for each_thread in threads_list:
@@ -462,10 +482,10 @@ class Client:
         result_dict['reads'] = read_list
         try:
             if cr:
-                with open('/tmp/work_dir/cr/run_fig_4.json', 'w') as fp:
+                with open(self.cr_filepath+'/run_fig_4.json', 'w') as fp:
                     json.dump(result_dict, fp)
             else:
-                with open('/tmp/work_dir/craq/run_fig_4.json', 'w') as fp:
+                with open(self.craq_filepath+'/run_fig_4.json', 'w') as fp:
                     json.dump(result_dict, fp)
         except:
             print('Fig 4 results not found')
@@ -481,6 +501,7 @@ class Client:
         self.run_for_load_latency()
         self.reset_data_cr()
         self.write_vs_read_sec()
+        self.reset_data_cr()
         self.run_fig_4()
 
     def run_cr(self):
@@ -490,6 +511,7 @@ class Client:
         self.run_for_read_write_throughput(cr=True)
         self.reset_data_cr()
         self.write_vs_read_sec(cr=True)
+        self.reset_data_cr()
         self.run_fig_4(cr=True)
 
 def main():
@@ -499,26 +521,19 @@ def main():
     parser.add_argument('--write', type=int, default=10)
     parser.add_argument('--read', type=int, default=10)
     parser.add_argument('--skew_read', type=int, default=10)
+    parser.add_argument("--cr", action='store_true', help="runs cr")
     args = parser.parse_args()
     write_ops = args.write
     read_ops = args.read
     skew_read_ops = args.skew_read
     client_obj = Client(write_ops, read_ops, skew_read_ops)
     client_obj.connect_servers()
-    P1 = multiprocessing.Process(target=client_obj.run_craq)
-    P2 = multiprocessing.Process(target=client_obj.run_cr)
-    P1.start()
-    P2.start()
-    P1.join()
-    P2.join()
+    if args.cr:
+        client_obj.run_cr()
+    else:
+        client_obj.run_craq()
     for ip in client_obj.server_ips:
         client_obj.ips_dict[ip]['transport'].close()
 
 if __name__ == "__main__": 
     main()
-
-
-'''todo
-run for 3 node craq and cr
-create clients = [1,2,4,6,8,10] expected start: 20000 (for 1 client): fig4 craq
-'''
