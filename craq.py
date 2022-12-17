@@ -76,7 +76,7 @@ class craq:
         ssh_obj.connect(node.user+self.hostname, username=self.usern, key_filename='craq')
         stdin, stdout, stderr = ssh_obj.exec_command("thrift --version")
         stdout.read()
-        stdin, stdout, stderr = ssh_obj.exec_command("cd /tmp/work_dir/1st_graph\n; python3 Server.py")
+        stdin, stdout, stderr = ssh_obj.exec_command("cd /tmp/work_dir/client_server\n; python3 Server.py")
         time.sleep(1)
         ssh_obj.close()
 
@@ -103,10 +103,10 @@ class craq:
             each_user = node.user
             ssh_obj = node.ssh_obj
             ssh_obj.connect(node.user+self.hostname, username=self.usern, key_filename='craq')
-            stdin, stdout, stderr = ssh_obj.exec_command("cd /tmp/work_dir\n; sudo rm -rf 1st_graph")
+            stdin, stdout, stderr = ssh_obj.exec_command("cd /tmp/work_dir\n; sudo rm -rf client_server")
             #os.popen("echo 2225 | sudo -S scp -i craq -o StrictHostKeyChecking=no -r handler %s@%s%s:/tmp/work_dir/"%(self.usern,each_user,self.hostname)).read()
             #os.popen("echo 2225 | sudo -S scp -i craq -o StrictHostKeyChecking=no -r client_serv_handler %s@%s%s:/tmp/work_dir/"%(self.usern,each_user,self.hostname)).read()
-            os.popen("echo 2225 | sudo -S scp -i craq -o StrictHostKeyChecking=no -r 1st_graph %s@%s%s:/tmp/work_dir/"%(self.usern,each_user,self.hostname)).read()
+            os.popen("echo 2225 | sudo -S scp -i craq -o StrictHostKeyChecking=no -r client_server %s@%s%s:/tmp/work_dir/"%(self.usern,each_user,self.hostname)).read()
             ssh_obj.close()
 
     def add_setup_obj(self):
@@ -158,10 +158,10 @@ class craq:
             #server_ips_str = ["10.10.1.3", "10.10.1.2", "10.10.1.5"]
         if len(self.ip_list) == 7:
             server_ips_str = "[\"10.10.1.3\", \"10.10.1.2\", \"10.10.1.5\", \"10.10.1.6\", \"10.10.1.7\", \"10.10.1.8\", \"10.10.1.9\"]"
-        stdin, stdout, stderr = ssh_obj.exec_command("sudo sed -i 's/server_ips = .*/server_ips = %s/' /tmp/work_dir/1st_graph/Server.py"% (server_ips_str))
-        stdin, stdout, stderr = ssh_obj.exec_command("sudo sed -i 's/server_ips = .*/server_ips = %s/' /tmp/work_dir/1st_graph/client.py"% (server_ips_str))
-        stdin, stdout, stderr = ssh_obj.exec_command("cd /tmp/work_dir/1st_graph\n; rm -r gen-py")
-        stdin, stdout, stderr = ssh_obj.exec_command("cd /tmp/work_dir/1st_graph\n; thrift --gen py Handler.thrift")
+        stdin, stdout, stderr = ssh_obj.exec_command("sudo sed -i 's/server_ips = .*/server_ips = %s/' /tmp/work_dir/client_server/Server.py"% (server_ips_str))
+        stdin, stdout, stderr = ssh_obj.exec_command("sudo sed -i 's/server_ips = .*/server_ips = %s/' /tmp/work_dir/client_server/client.py"% (server_ips_str))
+        stdin, stdout, stderr = ssh_obj.exec_command("cd /tmp/work_dir/client_server\n; rm -r gen-py")
+        stdin, stdout, stderr = ssh_obj.exec_command("cd /tmp/work_dir/client_server\n; thrift --gen py Handler.thrift")
         stdin, stdout, stderr = ssh_obj.exec_command("mkdir /tmp/work_dir/cr")
         stdin, stdout, stderr = ssh_obj.exec_command("mkdir /tmp/work_dir/craq")
 
@@ -208,7 +208,6 @@ def main():
     parser.add_argument('--skew_read_ops', type=int, default=200)
     args = parser.parse_args()
     craq_obj = craq(args.ips, args.users)
-    #import pdb; pdb.set_trace()
     if args.setup:
         craq_obj.setup_nodes()
         return
@@ -221,7 +220,6 @@ def main():
     craq_obj.update_ips_server()
     time.sleep(1)
     print('updated client server files to nodes')
-    import pdb; pdb.set_trace()
     craq_obj.run_servers()
     time.sleep(2)
     print('Running Craq')
